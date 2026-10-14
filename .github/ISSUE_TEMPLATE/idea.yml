@@ -1,0 +1,34 @@
+name: Proponer una mejora
+description: Explica qué necesidad cubriría tu idea.
+title: "[idea] "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: plataforma
+    attributes:
+      label: Plataforma
+      options:
+        - Windows
+        - Android
+        - MEmu u otro emulador
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión del lector
+      placeholder: 0.12.1
+    validations:
+      required: true
+  - type: input
+    id: dispositivo
+    attributes:
+      label: Dispositivo y versión del sistema
+  - type: textarea
+    id: detalle
+    attributes:
+      label: Cuéntanos los detalles
+      description: No incluyas credenciales, libros completos ni datos personales.
+      placeholder: Qué problema resuelve tu propuesta y cómo te gustaría usarla.
+    validations:
+      required: true

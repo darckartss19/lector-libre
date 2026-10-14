@@ -1,0 +1,72 @@
+/* Columns paginate the original article; text, links and selections stay in it. */
+.reading-pane.reader-paginated {
+  overflow: hidden;
+  padding: 0;
+}
+.reader-page-frame {
+  position: relative;
+  margin: 0 auto;
+  max-width: 100%;
+  overflow: auto hidden;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  scroll-behavior: auto;
+  touch-action: pan-x;
+  border-radius: 8px;
+  box-shadow: 0 3px 16px #0002;
+}
+.reader-page-frame::-webkit-scrollbar {
+  display: none;
+}
+.reader-page-stage {
+  position: relative;
+  background: repeating-linear-gradient(
+    to right,
+    var(--page-bg, var(--panel)) 0,
+    var(--page-bg, var(--panel)) var(--reader-physical-page-width),
+    var(--bg) var(--reader-physical-page-width),
+    var(--bg) var(--reader-column-stride)
+  );
+}
+.reading-pane.reader-paginated .prose {
+  position: absolute;
+  left: var(--reader-page-padding);
+  top: var(--reader-page-padding);
+  width: var(--reader-prose-width);
+  height: var(--reader-prose-height);
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  columns: var(--reader-columns);
+  column-gap: var(--reader-column-gap);
+  column-fill: auto;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.reading-pane.reader-paginated .prose > :first-child {
+  margin-top: 0;
+}
+.reading-pane.reader-paginated .prose img,
+.reading-pane.reader-paginated .prose svg,
+.reading-pane.reader-paginated .prose video {
+  max-width: 100%;
+  max-height: var(--reader-prose-height);
+  object-fit: contain;
+  break-inside: avoid;
+}
+.reading-pane.reader-paginated .prose pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.reading-pane.reader-paginated .prose table {
+  max-width: 100%;
+  table-layout: fixed;
+}
+.reading-pane.reader-paginated .prose h1,
+.reading-pane.reader-paginated .prose h2,
+.reading-pane.reader-paginated .prose h3 {
+  break-after: avoid;
+}

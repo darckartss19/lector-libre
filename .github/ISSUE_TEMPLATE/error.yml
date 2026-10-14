@@ -1,0 +1,34 @@
+name: Reportar un error
+description: Ayúdanos a reproducir un problema.
+title: "[error] "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: plataforma
+    attributes:
+      label: Plataforma
+      options:
+        - Windows
+        - Android
+        - MEmu u otro emulador
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión del lector
+      placeholder: 0.12.1
+    validations:
+      required: true
+  - type: input
+    id: dispositivo
+    attributes:
+      label: Dispositivo y versión del sistema
+  - type: textarea
+    id: detalle
+    attributes:
+      label: Cuéntanos los detalles
+      description: No incluyas credenciales, libros completos ni datos personales.
+      placeholder: Pasos para reproducirlo, resultado esperado, resultado real y formato del documento.
+    validations:
+      required: true

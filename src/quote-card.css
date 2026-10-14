@@ -1,0 +1,116 @@
+.quote-card-dialog {
+  width: min(1100px, 95vw);
+  max-width: 95vw;
+  max-height: 92vh;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+}
+.quote-card-dialog form {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(92vh - 48px);
+  gap: 16px;
+}
+.quote-card-dialog header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+.quote-card-dialog h2 {
+  margin: 0 0 8px;
+}
+.quote-editor {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(240px, 1fr);
+  min-height: 0;
+  gap: 24px;
+  flex: 1;
+  overflow: auto;
+}
+.quote-options {
+  overflow: auto;
+  padding-right: 10px;
+}
+.quote-options label {
+  display: block;
+  margin: 0 0 14px;
+  font-size: 13px;
+}
+.quote-options input:not([type="checkbox"]),
+.quote-options textarea,
+.quote-options select {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+}
+.quote-options textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+.quote-options input[type="color"] {
+  height: 40px;
+  padding: 4px;
+}
+.quote-options .check-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.quote-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 0;
+  overflow: auto;
+  gap: 12px;
+}
+.quote-preview canvas {
+  display: block;
+  max-width: 100%;
+  width: auto;
+  max-height: 55vh;
+  height: auto;
+  box-shadow: 0 6px 24px #0003;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.quote-preview p {
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+  max-width: 320px;
+  margin: 0;
+}
+.quote-card-dialog footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.quote-card-dialog footer .button-row {
+  justify-content: flex-end;
+}
+.quote-card-dialog .quote-status {
+  font-size: 13px;
+  min-height: 20px;
+  margin: 0 0 10px;
+}
+@media (max-width: 850px) {
+  .quote-card-dialog {
+    padding: 16px;
+  }
+  .quote-card-dialog form {
+    max-height: calc(92vh - 32px);
+  }
+  .quote-editor {
+    gap: 14px;
+  }
+  .quote-preview canvas {
+    max-height: 45vh;
+  }
+}

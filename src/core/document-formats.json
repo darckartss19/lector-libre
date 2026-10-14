@@ -1,0 +1,60 @@
+[
+  {
+    "id": "epub",
+    "label": "EPUB",
+    "mime": "application/epub+zip",
+    "readable": true
+  },
+  { "id": "pdf", "label": "PDF", "mime": "application/pdf", "readable": true },
+  { "id": "txt", "label": "TXT", "mime": "text/plain", "readable": true },
+  {
+    "id": "fb2",
+    "label": "FB2",
+    "mime": "application/x-fictionbook+xml",
+    "readable": true
+  },
+  {
+    "id": "docx",
+    "label": "DOCX",
+    "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "readable": true
+  },
+  {
+    "id": "odt",
+    "label": "ODT",
+    "mime": "application/vnd.oasis.opendocument.text",
+    "readable": true
+  },
+  { "id": "html", "label": "HTML", "mime": "text/html", "readable": true },
+  { "id": "htm", "label": "HTML", "mime": "text/html", "readable": true },
+  {
+    "id": "md",
+    "label": "Markdown",
+    "mime": "text/markdown",
+    "readable": true
+  },
+  {
+    "id": "markdown",
+    "label": "Markdown",
+    "mime": "text/markdown",
+    "readable": true
+  },
+  {
+    "id": "cbz",
+    "label": "CBZ",
+    "mime": "application/vnd.comicbook+zip",
+    "readable": true
+  },
+  {
+    "id": "mobi",
+    "label": "MOBI",
+    "mime": "application/x-mobipocket-ebook",
+    "readable": false
+  },
+  {
+    "id": "azw3",
+    "label": "AZW3",
+    "mime": "application/vnd.amazon.ebook",
+    "readable": false
+  }
+]

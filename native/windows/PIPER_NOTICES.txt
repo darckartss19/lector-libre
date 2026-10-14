@@ -1,0 +1,12 @@
+Optional local speech runtime: Piper 2023.11.14-2 for Windows amd64.
+Downloaded from the original project only when a neural voice is installed.
+Piper and piper-phonemize: MIT. ONNX Runtime: MIT. eSpeak NG: GPL-3.0-or-later.
+The runtime is a separate process; Lector libre's original code remains MIT.
+Original source, license texts and build instructions:
+https://github.com/rhasspy/piper/tree/2023.11.14-2
+https://github.com/rhasspy/piper-phonemize/tree/v1.1.0
+https://github.com/espeak-ng/espeak-ng/tree/1.51
+https://github.com/microsoft/onnxruntime/tree/v1.14.1
+Runtime download: https://github.com/rhasspy/piper/releases/tag/2023.11.14-2
+Voice licenses and provenance: each downloaded voice includes its original MODEL_CARD.txt.
+The runtime and voice models are not included in the distributable installer or source archive.

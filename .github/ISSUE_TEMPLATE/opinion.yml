@@ -1,0 +1,33 @@
+name: Reseña de la aplicación
+description: Cuéntanos qué te gustó y qué cambiarías.
+title: "[opinion] "
+body:
+  - type: dropdown
+    id: plataforma
+    attributes:
+      label: Plataforma
+      options:
+        - Windows
+        - Android
+        - MEmu u otro emulador
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión del lector
+      placeholder: 0.12.1
+    validations:
+      required: true
+  - type: input
+    id: dispositivo
+    attributes:
+      label: Dispositivo y versión del sistema
+  - type: textarea
+    id: detalle
+    attributes:
+      label: Cuéntanos los detalles
+      description: No incluyas credenciales, libros completos ni datos personales.
+      placeholder: Qué funciona bien, qué se siente incómodo y qué cambiarías.
+    validations:
+      required: true

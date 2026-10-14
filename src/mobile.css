@@ -1,0 +1,333 @@
+.mobile-header,
+.mobile-menu-backdrop,
+.mobile-tools-toggle {
+  display: none;
+}
+[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 700px), (max-width: 1100px) and (pointer: coarse) {
+  html {
+    overflow-x: hidden;
+  }
+  #app {
+    min-height: 100dvh;
+    display: block;
+  }
+  button,
+  select {
+    min-height: 44px;
+  }
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: max(6px, env(safe-area-inset-top)) 12px 6px;
+    min-height: 56px;
+    background: var(--side);
+  }
+  .mobile-header > span {
+    font:
+      20px Georgia,
+      serif;
+  }
+  .mobile-header button {
+    padding: 10px;
+  }
+  .sidebar {
+    width: min(310px, 86vw);
+    z-index: 20;
+    transform: translateX(-100%);
+    transition: transform 160ms ease;
+    padding: max(18px, env(safe-area-inset-top)) 18px
+      max(18px, env(safe-area-inset-bottom));
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  .sidebar .genres {
+    min-height: 80px;
+  }
+  #app.mobile-menu-open .sidebar {
+    transform: none;
+  }
+  #app.mobile-menu-open .mobile-menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: #0008;
+    border: 0;
+    border-radius: 0;
+    z-index: 19;
+  }
+  .workspace {
+    margin-left: 0;
+    width: 100%;
+    padding: 24px 16px calc(28px + env(safe-area-inset-bottom));
+  }
+  h1 {
+    font-size: 28px;
+  }
+  .search {
+    width: 100%;
+  }
+  .library-header {
+    gap: 16px;
+  }
+  .library-toolbar {
+    margin-block: 22px 16px;
+  }
+  .library-toolbar > span {
+    display: none;
+  }
+  .library-toolbar > div {
+    gap: 8px;
+  }
+  .books.covers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
+  }
+  .books.list .book-card {
+    grid-template-columns: 65px minmax(0, 1fr);
+  }
+  .books.list .book-bottom {
+    flex-wrap: wrap;
+  }
+  .book-info {
+    min-width: 0;
+  }
+  .book-bottom {
+    gap: 4px;
+  }
+  .book-bottom button {
+    min-width: 44px;
+  }
+  .library-pages {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: 8px;
+    gap: 6px;
+  }
+  .library-pages button {
+    min-width: 0;
+    padding: 8px;
+  }
+  .library-pages span {
+    font-size: 11px;
+  }
+  .settings-grid,
+  .setting-columns,
+  .series-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .panel {
+    padding: 18px;
+    min-width: 0;
+  }
+  .theme-palettes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .page-panel-heading,
+  .bulk-actions,
+  .filter-summary {
+    flex-wrap: wrap;
+  }
+  .filter-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  dialog {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    max-height: 90dvh;
+    padding: 18px;
+    overflow-y: auto;
+  }
+  .notice {
+    left: 12px;
+    right: 12px;
+    max-width: none;
+    transform: none;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+  .mobile-reading > .mobile-header {
+    display: none;
+  }
+  .workspace.reading-workspace,
+  #app.reader-focus .workspace.reading-workspace {
+    height: 100dvh;
+    margin: 0;
+    width: 100%;
+    padding: max(8px, env(safe-area-inset-top)) 8px
+      max(8px, env(safe-area-inset-bottom));
+  }
+  .reader-header {
+    gap: 8px;
+    padding-bottom: 8px;
+  }
+  .reader-header div {
+    min-width: 0;
+  }
+  .reader-header h2 {
+    font-size: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 45vw;
+  }
+  .reader-header button {
+    padding: 8px;
+    flex-shrink: 0;
+  }
+  .reader-header small {
+    display: none;
+  }
+  .mobile-tools-toggle {
+    display: inline-flex;
+    align-self: flex-start;
+    margin-block: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .reader-tools {
+    display: none;
+    max-height: 32dvh;
+    overflow-y: auto;
+    margin: 0 0 8px;
+    justify-content: flex-start;
+  }
+  #app.mobile-tools-open .reader-tools {
+    display: flex;
+  }
+  .reader-tools select,
+  .reader-tools button {
+    font-size: 13px;
+  }
+  .reader-body {
+    position: relative;
+    gap: 0;
+  }
+  .reader-panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    z-index: 3;
+    border-radius: 0;
+  }
+  .reading-pane {
+    padding: 0;
+    overscroll-behavior: contain;
+  }
+  .prose {
+    padding: min(18px, var(--page-padding));
+    border-radius: 0;
+    box-shadow: none;
+    overflow-wrap: anywhere;
+  }
+  .prose table {
+    max-width: 100%;
+  }
+  .reader-footer {
+    padding-top: 8px;
+  }
+  .chapter-controls {
+    gap: 6px;
+  }
+  .chapter-controls button {
+    padding: 8px;
+    font-size: 13px;
+  }
+  #reading-page-label {
+    font-size: 11px;
+  }
+  .book-progress {
+    margin-top: 6px;
+  }
+  .import-job {
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    max-width: none;
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+  .audio-bar {
+    left: 0;
+    right: 0;
+    padding: 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    flex-wrap: wrap;
+  }
+  #app.with-audio .workspace.reading-workspace {
+    padding-bottom: 180px;
+  }
+  #app.reader-focus .mobile-tools-toggle {
+    display: none;
+  }
+}
+html[data-platform="android"] .shortcuts-panel {
+  display: none;
+}
+@media (min-width: 600px) and (max-width: 1100px) and (max-height: 500px) and (pointer: coarse) {
+  .mobile-header {
+    min-height: 52px;
+    padding-block: 4px;
+  }
+  .workspace:not(.reading-workspace) {
+    padding: 16px 20px 28px;
+  }
+  .library-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+  .library-header h1 {
+    font-size: 26px;
+    margin-bottom: 6px;
+  }
+  .library-header .eyebrow {
+    margin-bottom: 6px;
+  }
+  .library-header .search {
+    width: min(270px, 42vw);
+    flex-shrink: 0;
+  }
+  .library-toolbar {
+    margin-block: 16px 12px;
+  }
+  .books.covers {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
+}
+
+.document-scan-dialog {
+  width: min(700px, calc(100vw - 24px));
+  max-height: 88dvh;
+  overflow: auto;
+}
+.scan-files {
+  max-height: 38dvh;
+  overflow: auto;
+  margin: 16px 0;
+}
+.scan-files label {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.scan-files small {
+  display: block;
+  overflow-wrap: anywhere;
+}
