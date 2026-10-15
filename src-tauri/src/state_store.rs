@@ -137,7 +137,9 @@ fn load_mode(root: &Path, lazy: bool) -> Result<(Value, Value), String> {
             } else {
                 wire_state(root, &value)?
             };
-            if file == "state.json" && legacy_covers {
+            if file == "state.bak" {
+                crate::replace_json(&root.join("state.json"), &value)?;
+            } else if legacy_covers {
                 crate::write_json(&root.join("state.json"), &value)?;
             }
             Ok::<_, String>((value, wire))
@@ -241,7 +243,13 @@ fn patch_state(value: &Value, patch: &Value) -> Result<Value, String> {
 fn persist_value(root: &Path, cache: &mut Option<Value>, mut value: Value) -> Result<(), String> {
     validate(&value)?;
     externalize(root, &mut value)?;
-    crate::write_json(&root.join("state.json"), &value)?;
+    if let Some(checkpoint) = cache.as_ref() {
+        crate::replace_json(&root.join("state.bak"), checkpoint)?;
+    } else if root.join("state.json").exists() || root.join("state.bak").exists() {
+        let (checkpoint, _) = load_mode(root, true)?;
+        crate::replace_json(&root.join("state.bak"), &checkpoint)?;
+    }
+    crate::replace_json(&root.join("state.json"), &value)?;
     *cache = Some(value);
     Ok(())
 }
@@ -306,6 +314,36 @@ mod tests {
         json!({"version":1,"books":[{"id":"a","title":"Original","cover":"data:image/png;base64,example","progress":0}],"preferences":{"theme":"night"},"registers":{"[\"a\",\"cover\"]":{"value":"data:image/png;base64,example"}}})
     }
     #[test]
+    fn recovery_promotes_a_valid_backup_without_overwriting_it_with_a_corrupt_primary() {
+        let root = root();
+        let original = json!({"version":1,"books":[],"preferences":{"theme":"light"},"registers":{}});
+        fs::write(root.join("state.json"), b"{corrupt primary").unwrap();
+        fs::write(root.join("state.bak"), serde_json::to_vec(&original).unwrap()).unwrap();
+        let (recovered, _) = load_mode(&root, true).unwrap();
+        assert_eq!(recovered, original);
+        assert_eq!(serde_json::from_slice::<Value>(&fs::read(root.join("state.json")).unwrap()).unwrap(), original);
+        let mut next = recovered;
+        next["preferences"]["theme"] = json!("dark");
+        persist_value(&root, &mut None, next.clone()).unwrap();
+        assert_eq!(serde_json::from_slice::<Value>(&fs::read(root.join("state.bak")).unwrap()).unwrap(), original);
+        assert_eq!(serde_json::from_slice::<Value>(&fs::read(root.join("state.json")).unwrap()).unwrap(), next);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn saving_after_disk_corruption_keeps_a_valid_checkpoint_as_backup() {
+        let root = root();
+        let mut cache = None;
+        persist_value(&root, &mut cache, fixture()).unwrap();
+        let previous = cache.clone().unwrap();
+        fs::write(root.join("state.json"), b"corrupted while the app was open").unwrap();
+        let mut next = previous.clone();
+        next["books"][0]["progress"] = json!(0.5);
+        persist_value(&root, &mut cache, next.clone()).unwrap();
+        assert_eq!(serde_json::from_slice::<Value>(&fs::read(root.join("state.bak")).unwrap()).unwrap(), previous);
+        assert_eq!(serde_json::from_slice::<Value>(&fs::read(root.join("state.json")).unwrap()).unwrap(), next);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
     fn migration_preserves_covers_once_and_backup_remains_readable() {
         let root = root();
         let original = fixture();
@@ -367,12 +405,13 @@ mod tests {
         persist_value(&root, &mut cache, fixture()).unwrap();
         let old_bytes = fs::read(root.join("state.json")).unwrap();
         let old_cache = cache.clone();
-        fs::create_dir(root.join("state.tmp")).unwrap();
+        fs::create_dir(root.join("state.bak")).unwrap();
         let mut next = cache.clone().unwrap();
         next["books"][0]["progress"] = json!(0.75);
         assert!(persist_value(&root, &mut cache, next).is_err());
         assert_eq!(cache, old_cache);
         assert_eq!(fs::read(root.join("state.json")).unwrap(), old_bytes);
+        assert!(!fs::read_dir(&root).unwrap().any(|entry| entry.unwrap().file_name().to_string_lossy().starts_with(".lector-json-")));
         fs::remove_dir_all(root).unwrap();
     }
     #[test]

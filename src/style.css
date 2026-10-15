@@ -3,14 +3,16 @@
   color: var(--ink);
   background: var(--bg);
   font-synthesis: none;
-  --bg: #f8f7f2;
-  --panel: #fffef9;
-  --side: #eeeee5;
-  --ink: #263d32;
-  --muted: #7d8378;
-  --line: #dddfd3;
-  --accent: #375e47;
-  --hover: #e1e5d7;
+  --bg: #f4f2ed;
+  --panel: #fcfbf7;
+  --side: #eae7df;
+  --ink: #30332f;
+  --muted: #62665d;
+  --line: #d6d3c9;
+  --accent: #3f624e;
+  --hover: #e2e8df;
+  --danger: #94483f;
+  --danger-ink: #ffffff;
 }
 * {
   box-sizing: border-box;
@@ -59,7 +61,8 @@ svg {
   border-color: var(--accent);
 }
 .primary:hover {
-  filter: brightness(1.12);
+  background: var(--accent);
+  border-color: var(--ink);
 }
 .small {
   padding: 8px 12px;
@@ -461,8 +464,18 @@ select {
   pointer-events: none;
 }
 .cover:hover {
-  transform: translateY(-3px);
-  transition: transform 0.15s;
+  background: var(--book-color);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .cover {
+    transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .cover:hover:not(:focus-visible) {
+    transform: translateY(-2px);
+  }
+  .cover:focus-visible {
+    transition: none;
+  }
 }
 .cover img {
   width: 100%;
@@ -838,7 +851,8 @@ dialog label {
   z-index: 8;
 }
 .notice.error {
-  background: #7f3d3a;
+  background: var(--danger);
+  color: var(--danger-ink);
 }
 .hidden {
   display: none !important;
@@ -1127,15 +1141,15 @@ html {
   height: 50px;
   border-radius: 5px;
   overflow: hidden;
-  background: var(--swatch-bg);
+  background: var(--swatch-page);
   color: var(--swatch-ink);
   align-items: center;
 }
 .palette-preview i {
   height: 100%;
   width: 12px;
-  background: var(--swatch-accent);
-  opacity: 0.65;
+  background: var(--swatch-side);
+  border-right: 3px solid var(--swatch-accent);
 }
 .palette-preview b {
   flex: 1;
@@ -1236,6 +1250,20 @@ html {
 }
 .prose blockquote {
   border-color: var(--page-line, var(--line));
+}
+.prose a {
+  color: var(--page-accent, var(--accent));
+  text-underline-offset: 0.15em;
+}
+.prose a:focus-visible {
+  outline: 2px solid var(--page-accent, var(--accent));
+  outline-offset: 3px;
+}
+.prose::selection,
+.prose ::selection,
+.preview-prose ::selection {
+  background: var(--page-selection, var(--hover));
+  color: var(--page-ink, var(--ink));
 }
 .chapter-controls {
   max-width: var(--page-width, 760px);

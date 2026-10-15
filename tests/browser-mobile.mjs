@@ -127,6 +127,17 @@ try {
       ),
     );
   await noOverflow();
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await noOverflow();
+    for (const control of await page.locator(".view-toggle button").all()) {
+      const bounds = await control.boundingBox();
+      assert.ok(
+        bounds.width >= 48 && bounds.height >= 48,
+        "View controls need a 48px touch target",
+      );
+    }
+  }
   await page.locator("[data-mobile-menu]").click();
   assert.equal(
     await page.locator(".workspace").evaluate((el) => el.inert),
@@ -196,7 +207,7 @@ try {
     window.calls.some(
       ({ command, args }) =>
         command === "mobile_chrome" &&
-        args.background === "#0c1320" &&
+        args.background === "#131b24" &&
         args.darkIcons === false,
     ),
   );
@@ -205,7 +216,7 @@ try {
     window.calls.some(
       ({ command, args }) =>
         command === "mobile_chrome" &&
-        args.background === "#eeeee5" &&
+        args.background === "#eae7df" &&
         args.darkIcons === true,
     ),
   );

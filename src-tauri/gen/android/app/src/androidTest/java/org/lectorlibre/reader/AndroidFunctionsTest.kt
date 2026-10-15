@@ -113,6 +113,18 @@ class AndroidFunctionsTest : Instrumentation() {
             assertTrue(skipped.getInt("offset") > paused.getInt("offset"))
             assertEquals("playing", command(JSONObject().put("action", "resume")).getString("status"))
             assertEquals("15", command(JSONObject().put("action", "timer").put("mode", "15")).getString("sleepMode"))
+            var voiceError: String? = null
+            instrumentation.runOnMainSync {
+                service!!.execute(JSONObject().put("action", "resume").put("voice", "android:missing-test-voice"),
+                    { fail("A missing voice was accepted") }, { voiceError = it })
+            }
+            assertNotNull(voiceError)
+            instrumentation.runOnMainSync {
+                service!!.onStartCommand(Intent(appContext, ReaderSpeechService::class.java).setAction("play"), 0, 1)
+            }
+            val failedVoice = command(JSONObject().put("action", "state"))
+            assertEquals("error", failedVoice.getString("status"))
+            assertTrue(failedVoice.getString("error").isNotBlank())
             val stopped = command(JSONObject().put("action", "stop"))
             assertFalse(stopped.getBoolean("hasProgram"))
             Thread.sleep(600)

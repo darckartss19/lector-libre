@@ -66,7 +66,7 @@ export function settingsMarkup(
         THEMES.filter((t) => t.dark),
         p.theme,
       )}</optgroup></select></label></div>
-      <div class="theme-palettes">${THEMES.map((theme) => `<button data-theme="${theme.id}" aria-label="${esc(theme.name)}" aria-pressed="${theme.id === p.theme}" style="--swatch-bg:${theme.colors[0]};--swatch-ink:${theme.colors[3]};--swatch-accent:${theme.colors[6]}"><span class="palette-preview" aria-hidden="true"><i></i><b>Aa</b></span><span>${esc(theme.name)}</span></button>`).join("")}</div>
+      <div class="theme-palettes">${THEMES.map((theme) => `<button data-theme="${theme.id}" aria-label="${esc(theme.name)}" aria-pressed="${theme.id === p.theme}" style="--swatch-page:${theme.page[0]};--swatch-ink:${theme.page[1]};--swatch-side:${theme.colors[2]};--swatch-accent:${theme.colors[6]}"><span class="palette-preview" aria-hidden="true"><i></i><b>Aa</b></span><span>${esc(theme.name)}</span></button>`).join("")}</div>
       <label>Diseño de los lomos<select data-preference="spineStyle">${options(
         [
           { id: "illustrated", name: "Colores e ilustración de la portada" },

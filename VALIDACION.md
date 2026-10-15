@@ -1,13 +1,23 @@
-# Comprobaciones de Android 0.12.2
+# Comprobaciones de 0.12.4
 
-La corrección se centra en la autorización y la búsqueda de documentos. Drive sigue desactivado en la interfaz y los comandos nativos.
+Comprobaciones del 15 de octubre de 2026. Google Drive continúa desactivado por defecto. Se conservan las correcciones de respaldo, lectura vertical y controles de voz de 0.12.3.
 
-- 106 pruebas JavaScript aprobadas.
-- Nueve escenarios de interfaz del buscador aprobados con puente nativo simulado: primera autorización, cancelación, búsqueda al añadir carpeta, permisos guardados, permiso retirado, denegación en Android antiguo, resultados parciales, prevención de peticiones repetidas y recuperación de errores del selector.
-- Once grupos de lectura móvil y las pruebas de funciones Android y Drive desactivado aprobados.
-- APK arm64 y x86/x86_64 compilados en release: versión 0.12.2/12002, mínimo Android 7.0/API 24. Firma v2 y alineación ZIP de 16 KiB verificadas. Misma identidad de firma que 0.12.1, para actualizar conservando los datos.
-- Confirmación manual del usuario: búsqueda con autorización funcionando en un Redmi Note 15 Pro.
+- Formato de código comprobado; 108 pruebas JavaScript y 54 pruebas Rust del host Windows aprobadas.
+- Contraste de texto principal y secundario de las diez paletas sobre sus fondos de interfaz. Texto de lectura con un mínimo de 7:1 en los diez colores de página.
+- Cien combinaciones entre tema de interfaz y página comprobadas en el navegador, incluidos enlaces y controles principales, seleccionados y avisos de error. La prueba de contraste reprodujo el fallo anterior del botón principal al pasar el cursor.
+- Movimiento de portada con retorno suave, solo con ratón; sin elevación en pantallas táctiles ni cuando se solicita reducir movimiento. El menú con teclado se abre inmediatamente y la preferencia de reducir movimiento se respeta también en un móvil horizontal de 900 píxeles de ancho. La prueba reprodujo el retorno sin transición de la portada anterior.
+- Los identificadores de tema y las preferencias existentes no cambian. La vista previa conserva la independencia entre el tema de la aplicación y el color de página.
+- Las 23 suites de navegador completas aprobaron tras actualizar los dos valores de color esperados por la prueba de barras del sistema Android. La primera ejecución completa detectó esas expectativas antiguas; las comprobaciones funcionales de la prueba se conservaron.
+- Windows x64 y los APK de Android arm64 y MEmu se generaron con versión 0.12.4. Los APK declaran el paquete org.lectorlibre.reader y código 12004; apksigner verifica ambos y sus certificados coinciden con los de la versión publicada 0.12.2.
+- Alineación de paquete de 16 KB verificada con zipalign. Los segmentos LOAD de las bibliotecas arm64, x86 y x86_64 están alineados a 16384 bytes.
+- REA identifica el nuevo ejecutable Windows como PE de 64 bits e inventaría el APK arm64 sin contradicciones de integridad. La inspección es estática, no ejecuta la app ni certifica su comportamiento. El ejecutable no incluye la sección .dep-v0 para inventariar dependencias Rust.
 
-Las pruebas de instrumentación de voz, cifrado y navegación de frases corresponden a la base 0.12.0 en MEmu Android 9; las 51 pruebas Rust corresponden a la base pública 0.12.1. Esta actualización no modifica su lógica. Windows conserva su instalador 0.12.1.
+La revisión de movimiento comprobó las dos transiciones existentes. No se añadieron animaciones al pasar páginas, buscar ni cambiar de tema. Los requestAnimationFrame de posicionamiento y desplazamiento siguen cumpliendo su función de lectura.
 
-Estas comprobaciones no cubren todos los teléfonos, proveedores de documentos ni restricciones de almacenamiento. Las carpetas privadas de otras aplicaciones y algunas raíces de almacenamiento están restringidas por Android.
+Los PDF con diseño original, las ilustraciones y los cómics conservan sus colores. Las pruebas de contraste corresponden a la interfaz y al texto que dibuja el lector, no al texto incluido dentro de imágenes o páginas PDF originales.
+
+No hay dispositivo ADB conectado. No se han repetido en esta revisión las pruebas de instrumentación, permisos nativos, TalkBack, rotación física ni reproducción prolongada con la pantalla apagada. Las comprobaciones de movimiento son de navegador y no equivalen a medir fotogramas en el Redmi o en MEmu. La prueba de error de voz nativo compiló en la revisión anterior 0.12.3, sin ejecución en dispositivo.
+
+Las pruebas de rendimiento usan una biblioteca sintética de 825 libros en escritorio; no equivalen a medir archivos grandes reales en el teléfono. No se simularon pérdida de energía ni disco defectuoso.
+
+Windows conserva un instalador sin firma certificada y Android una firma de desarrollo. Los instaladores no modifican la aplicación instalada hasta que el usuario ejecuta la actualización. Los artefactos, el código y las huellas SHA-256 corresponden a la entrega 0.12.4.

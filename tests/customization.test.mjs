@@ -23,6 +23,31 @@ test("All palettes preserve text contrast on backgrounds and panels", () => {
     }
   }
 });
+test("Theme accents remain readable on selected controls and primary buttons", () => {
+  for (const theme of THEMES) {
+    const accent = theme.colors[6];
+    const buttonInk = theme.dark ? "#101512" : "#ffffff";
+    for (const background of [...theme.colors.slice(0, 3), theme.colors[7]]) {
+      assert.ok(contrastRatio(accent, background) >= 4.5, `${theme.id} accent`);
+    }
+    assert.ok(contrastRatio(buttonInk, accent) >= 4.5, `${theme.id} primary`);
+  }
+});
+test("Reading pages have their own restrained background and high contrast text", () => {
+  for (const theme of THEMES) {
+    const [background, ink] = theme.page;
+    assert.ok(contrastRatio(ink, background) >= 7, `${theme.id} reading text`);
+    assert.ok(
+      contrastRatio(theme.colors[6], background) >= 4.5,
+      `${theme.id} page link`,
+    );
+    assert.ok(
+      contrastRatio(ink, theme.colors[7]) >= 4.5,
+      `${theme.id} selection`,
+    );
+    assert.notEqual(background, theme.colors[1], `${theme.id} page and panel`);
+  }
+});
 test("Page, UI language and speech choices survive a new device merge; invalid values are rejected", () => {
   const p = {
     theme: "midnight",

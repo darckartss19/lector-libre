@@ -2543,7 +2543,12 @@ async function handleExtraAction(button) {
         await saveChain;
         notify("Preparando la copia de seguridad…");
         const result = await invoke("export_backup", { value: library });
-        if (result) notify("Copia de seguridad guardada.");
+        if (result)
+          notify(
+            result.remoteBooks
+              ? `Copia guardada con ${result.filesExported} archivos. ${result.remoteBooks} libros conservan solo su referencia de Drive; necesitarás Drive para abrirlos.`
+              : "Copia de seguridad guardada.",
+          );
       } finally {
         busy = false;
         backupRequested = false;

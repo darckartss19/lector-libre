@@ -27,3 +27,5 @@ backups/
 **/local.properties
 **/tauri.properties
 **/tauri.settings.gradle
+
+graphify-out/

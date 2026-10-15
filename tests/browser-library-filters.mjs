@@ -71,7 +71,7 @@ try {
   page.setDefaultTimeout(15000);
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await installStateBridge(page);
+  await installStateBridge(page, { platform: "windows" });
   await page.addInitScript(
     ({ initial, local, cloud }) => {
       window.saved = structuredClone(initial);

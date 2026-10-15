@@ -38,7 +38,7 @@ const server = await preview({
 });
 const browser = await chromium.launch({ channel: "msedge", headless: true });
 const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
-await installStateBridge(page);
+await installStateBridge(page, { platform: "windows" });
 await page.addInitScript(
   ({ fixture }) => {
     window.saved = fixture;

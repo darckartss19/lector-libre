@@ -34,7 +34,7 @@ try {
   page.setDefaultTimeout(15000);
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await installStateBridge(page);
+  await installStateBridge(page, { platform: "windows" });
   await page.addInitScript((initial) => {
     let callbackId = 0;
     const callbacks = new Map(),
@@ -189,14 +189,14 @@ try {
     await page
       .locator(".page-sample")
       .evaluate((el) => getComputedStyle(el).backgroundColor),
-    "rgb(245, 234, 214)",
+    "rgb(241, 229, 207)",
   );
   await page.locator('button[data-theme="midnight"]').click();
   assert.equal(
     await page
       .locator(".page-sample")
       .evaluate((el) => getComputedStyle(el).backgroundColor),
-    "rgb(245, 234, 214)",
+    "rgb(241, 229, 207)",
   );
 
   // Range values and typography update the existing preview without a screen reset.

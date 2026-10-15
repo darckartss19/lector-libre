@@ -61,7 +61,7 @@ try {
   page.setDefaultTimeout(15000);
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await installStateBridge(page);
+  await installStateBridge(page, { platform: "windows" });
   await page.addInitScript(
     ({ initial, bytes }) => {
       let callbackId = 0;
@@ -184,7 +184,9 @@ try {
     await page.locator(".reading-pane").evaluate((pane) => pane.scrollTop > 0),
   );
   await page.locator("#reader-search").fill("palabra inexistente");
-  assert.equal(await page.locator("[data-search-result]").count(), 0);
+  await page.waitForFunction(
+    () => document.querySelectorAll("[data-search-result]").length === 0,
+  );
   await page.keyboard.press("Escape");
   await page.waitForFunction(
     () => document.querySelector("#reader-panel").hidden,
@@ -255,6 +257,7 @@ try {
   await page.locator('.reader-header [data-action="back"]').click();
   await page.locator(".book-title").click();
   await page.locator(".reader-footer").waitFor();
+  await page.locator('[data-action="book-notes"]').click();
   await page.locator(`[data-go-annotation="${bookmark.id}"]`).click();
   assert.ok(
     await page.locator(".reading-pane").evaluate((pane) => pane.scrollTop > 0),

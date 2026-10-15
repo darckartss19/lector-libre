@@ -23,20 +23,40 @@ pub fn directory(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(dir)
 }
 pub fn write_json(path: &std::path::Path, value: &Value) -> Result<(), String> {
-    let tmp = path.with_extension("tmp");
     let bytes = serde_json::to_vec_pretty(value).map_err(|e| e.to_string())?;
-    use std::io::Write;
-    let mut file = fs::File::create(&tmp).map_err(|e| e.to_string())?;
-    file.write_all(&bytes)
-        .and_then(|_| file.sync_all())
-        .map_err(|e| e.to_string())?;
-    drop(file);
-    // Recovery copy covers interrupted replacement on Windows.
-    if path.exists() {
-        fs::copy(path, path.with_extension("bak")).map_err(|e| e.to_string())?;
-        fs::remove_file(path).map_err(|e| e.to_string())?;
+    match fs::read(path) {
+        Ok(previous) if serde_json::from_slice::<Value>(&previous).is_ok() => {
+            replace_bytes(&path.with_extension("bak"), &previous)?;
+        }
+        Ok(_) => (),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => (),
+        Err(error) => return Err(error.to_string()),
     }
-    fs::rename(tmp, path).map_err(|e| e.to_string())
+    replace_bytes(path, &bytes)
+}
+pub fn replace_json(path: &std::path::Path, value: &Value) -> Result<(), String> {
+    let bytes = serde_json::to_vec_pretty(value).map_err(|e| e.to_string())?;
+    replace_bytes(path, &bytes)
+}
+fn replace_bytes(path: &std::path::Path, bytes: &[u8]) -> Result<(), String> {
+    use std::io::Write;
+    let parent = path.parent().ok_or("Destino de guardado no válido")?;
+    let temporary = parent.join(format!(".lector-json-{}.tmp", uuid::Uuid::new_v4()));
+    let result = (|| {
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temporary)
+            .map_err(|e| e.to_string())?;
+        file.write_all(bytes)
+            .and_then(|_| file.sync_all())
+            .map_err(|e| e.to_string())?;
+        drop(file);
+        // Same-directory rename replaces the destination without deleting it first.
+        fs::rename(&temporary, path).map_err(|e| e.to_string())
+    })();
+    let _ = fs::remove_file(temporary);
+    result
 }
 #[tauri::command]
 async fn import_files(app: tauri::AppHandle, deferred: Option<bool>) -> Result<Vec<Value>, String> {

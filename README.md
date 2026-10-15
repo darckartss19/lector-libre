@@ -1,20 +1,36 @@
 # Lector libre
 
-Lector gratuito y de código abierto para **Windows y Android**, con biblioteca personal, lectura sin conexión, voz y personalización. La actualización para Android es **0.12.2**, con la búsqueda de documentos corregida. Windows sigue disponible en **0.12.1**. Queremos probarla con más dispositivos y mejorarla con las reseñas de la comunidad.
+Lector gratuito y de código abierto para **Windows y Android**, con biblioteca personal, lectura sin conexión, voz y personalización. La versión **0.12.4** reúne las paletas revisadas para lectura, los ajustes de movimiento y las correcciones de respaldo, voz y posición de lectura.
 
 **La sincronización con Google Drive está desactivada en esta entrega, tanto en Windows como en Android. Está prevista para una versión futura.** Tus libros, progreso y ajustes se guardan en el dispositivo. Puedes trasladarlos mediante una copia ZIP.
 
-## Descargar
+## Cambios de 0.12.4
 
-[Descargas para Windows y Android](https://github.com/darckartss19/lector-libre/releases)
+- Diez paletas revisadas: papel cálido, sepia y niebla, más siete opciones nocturnas con matices menos saturados. Se conservan los nombres y las preferencias existentes.
+- Colores de página propios, combinables con cualquier tema de la interfaz. Texto de lectura con contraste mínimo de 7:1 en las paletas incluidas; los enlaces y la selección siguen el color de página.
+- Botones, selecciones y avisos de error con contraste comprobado. Las portadas conservan su color al pasar el cursor.
+- Movimiento discreto de las portadas solo con ratón; regreso suave y sin efecto al tocar. El menú respeta reducir movimiento también en horizontal y se abre inmediatamente al usar el teclado.
+- Los PDF con diseño original y las imágenes conservan sus propios colores. Las paletas no recolorean las ilustraciones ni incorporan fondos fotográficos a la lectura.
+
+## Correcciones de 0.12.3 incluidas
+
+- Conserva el último estado válido al recuperar una biblioteca o al guardar después de una corrupción del archivo principal.
+- Rechaza una copia completa si falta un libro sin referencia remota y mantiene el ZIP anterior. Avisa cuando una copia incluye solo referencias de Drive.
+- Mantiene el lugar de lectura vertical al cambiar el ancho, incluso si hay capítulos cargándose.
+- Los controles de voz de Android muestran un error recuperable si el motor no puede activar una voz.
+- Amplía los objetivos táctiles de los botones móviles y permite comprobar todas las suites de navegador con un comando.
+
+## Descargar versiones publicadas
+
+[Descargar Lector libre 0.12.4 para Windows y Android](https://github.com/darckartss19/lector-libre/releases/tag/v0.12.4)
 
 | Archivo | Para qué sirve |
 | --- | --- |
-| Lector-libre-0.12.1-Windows.exe | Instalador para Windows de 64 bits |
-| Lector-libre-0.12.2-Android-arm64.apk | Teléfonos Android de 64 bits |
-| Lector-libre-0.12.2-MEmu.apk | MEmu y dispositivos x86/x86_64 |
-| Lector-libre-0.12.2-codigo-fuente.zip | Código fuente de esta versión |
-| SHA256SUMS.txt | Comprobar que los archivos descargados coinciden con la entrega |
+| [Lector-libre-0.12.4-Windows.exe](https://github.com/darckartss19/lector-libre/releases/download/v0.12.4/Lector-libre-0.12.4-Windows.exe) | Instalador para Windows de 64 bits |
+| [Lector-libre-0.12.4-Android-arm64.apk](https://github.com/darckartss19/lector-libre/releases/download/v0.12.4/Lector-libre-0.12.4-Android-arm64.apk) | Teléfonos Android de 64 bits |
+| [Lector-libre-0.12.4-MEmu.apk](https://github.com/darckartss19/lector-libre/releases/download/v0.12.4/Lector-libre-0.12.4-MEmu.apk) | MEmu y dispositivos x86/x86_64 |
+| [Lector-libre-0.12.4-codigo-fuente.zip](https://github.com/darckartss19/lector-libre/releases/download/v0.12.4/Lector-libre-0.12.4-codigo-fuente.zip) | Código fuente de esta versión |
+| [Lector-libre-0.12.4-SHA256SUMS.txt](https://github.com/darckartss19/lector-libre/releases/download/v0.12.4/Lector-libre-0.12.4-SHA256SUMS.txt) | Comprobar que los archivos descargados coinciden con la entrega |
 
 Instala una actualización sobre la versión anterior para conservar los datos. Antes de probar una entrega nueva, puedes exportar una copia ZIP desde Personalizar y sincronizar. La versión de Windows no tiene firma de distribución certificada; los APK de esta vista previa usan una firma de desarrollo.
 
@@ -54,11 +70,13 @@ Se necesita Node.js 22 o posterior, pnpm, Rust y los requisitos de Tauri para la
 
 ```text
 pnpm install --frozen-lockfile
-pnpm test
-cargo test --manifest-path src-tauri/Cargo.toml
-pnpm build
+pnpm verify
 pnpm tauri build --bundles nsis
 ```
+
+El comando verify comprueba formato, pruebas JavaScript, Rust, compilación de interfaz y suites de navegador. Rust debe estar disponible en PATH. Las pruebas de navegador necesitan Microsoft Edge instalado; Playwright se instala como dependencia de desarrollo. Las integraciones de voz de Windows necesitan sus motores y modelos de prueba. Los tests usan bibliotecas sintéticas y no abren la biblioteca personal instalada.
+
+Para preparar un ZIP del código y la documentación actuales, ejecuta `python scripts/prepare-source.py`. Escribe en una carpeta nueva bajo work y toma la versión de package.json. README.md, ANDROID.md, PRIVACIDAD.md y VALIDACION.md en la raíz son las fuentes que se incluyen en el paquete; las carpetas de entregas anteriores se conservan como registros.
 
 Para Android consulta [ANDROID.md](ANDROID.md). Los builds predeterminados son públicos y mantienen Drive desactivado. La opción de compilación `drive-sync` está reservada para desarrollo experimental; no se utiliza en los instaladores de esta entrega ni incluye credenciales.
 

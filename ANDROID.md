@@ -1,6 +1,8 @@
-# Lector libre para Android 0.12.2
+# Lector libre para Android 0.12.4
 
 Vista previa pública con lectura y biblioteca local. **Google Drive está desactivado y se ofrecerá en una versión futura.**
+
+[Descargar Android y MEmu 0.12.4](https://github.com/darckartss19/lector-libre/releases/tag/v0.12.4). Esta versión ajusta las diez paletas y sus colores de página, conserva las correcciones de respaldo y voz de 0.12.3 y respeta reducir movimiento también en horizontal. Las portadas no se elevan al tocarlas.
 
 ## Instalar y probar
 

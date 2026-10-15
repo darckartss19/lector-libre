@@ -59,11 +59,11 @@ class ReaderSpeechService : Service() {
         wakeLock = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LectorLibre:Reading")
         media = MediaSession(this, "LectorLibreReading").apply {
             setCallback(object : MediaSession.Callback() {
-                override fun onPlay() { resume() }
-                override fun onPause() { pause("user") }
-                override fun onStop() { stopReading() }
-                override fun onSkipToNext() { skip(1) }
-                override fun onSkipToPrevious() { skip(-1) }
+                override fun onPlay() { control("play") }
+                override fun onPause() { control("pause") }
+                override fun onStop() { control("stop") }
+                override fun onSkipToNext() { control("next") }
+                override fun onSkipToPrevious() { control("previous") }
             }, handler)
             isActive = true
         }
@@ -82,14 +82,18 @@ class ReaderSpeechService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         foreground()
         if (program == null) { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); return START_NOT_STICKY }
-        when (intent?.action) {
-            "play" -> resume()
-            "pause" -> pause("user")
-            "stop" -> stopReading()
-            "next" -> skip(1)
-            "previous" -> skip(-1)
-        }
+        intent?.action?.let { control(it) }
         return START_NOT_STICKY
+    }
+
+    private fun control(action: String) {
+        val command = when (action) {
+            "play" -> JSONObject().put("action", "resume")
+            "next", "previous" -> JSONObject().put("action", "skip").put("direction", if (action == "next") 1 else -1)
+            "pause", "stop" -> JSONObject().put("action", action)
+            else -> return
+        }
+        execute(command, {}, {})
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) { stopReading(); stopSelf() }

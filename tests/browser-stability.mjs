@@ -92,7 +92,7 @@ try {
   page.setDefaultTimeout(30000);
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await installStateBridge(page);
+  await installStateBridge(page, { platform: "windows" });
   await page.addInitScript((fixture) => {
     const canvas = document.createElement("canvas");
     canvas.width = 48;

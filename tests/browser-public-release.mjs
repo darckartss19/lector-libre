@@ -82,4 +82,3 @@ try {
   await browser.close();
   await new Promise((resolve) => server.httpServer.close(resolve));
 }
-

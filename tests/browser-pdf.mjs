@@ -45,7 +45,7 @@ const errors = [],
   requests = [];
 page.on("pageerror", (e) => errors.push(e.message));
 page.on("request", (r) => requests.push(r.url()));
-await installStateBridge(page);
+await installStateBridge(page, { platform: "windows" });
 await page.addInitScript(
   ({ fixture, documents }) => {
     let id = 0;
@@ -398,7 +398,7 @@ try {
     document.querySelector("#notice").textContent.includes("No se pudo"),
   );
   assert.ok(await page.locator(".books").count());
-  await page.locator('[data-action="import"]').first().click();
+  await page.locator('.sidebar [data-action="import"]').click();
   await page.waitForFunction(() => window.saved.books.length === 7);
   assert.equal(await page.locator("dialog").count(), 0);
   assert.equal(

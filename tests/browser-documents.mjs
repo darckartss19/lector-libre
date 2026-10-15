@@ -190,7 +190,7 @@ try {
       { id: key.repeat(64), title: `Document ${format}`, format },
       1,
     );
-  await installStateBridge(page);
+  await installStateBridge(page, { platform: "windows" });
   await page.addInitScript(
     ({ fixture, documents, keys }) => {
       window.saved =

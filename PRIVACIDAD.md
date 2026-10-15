@@ -1,4 +1,4 @@
-# Privacidad de la vista previa 0.12.2
+# Privacidad de la vista previa 0.12.4
 
 La biblioteca, documentos importados, organización, notas, progreso y preferencias se guardan en este dispositivo. El lector conserva los archivos originales. Las copias ZIP se exportan al lugar que elijas.
 

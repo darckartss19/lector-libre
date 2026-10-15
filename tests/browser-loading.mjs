@@ -145,7 +145,7 @@ try {
     context.fillRect(0, 60, 100, 30);
     return canvas.toDataURL("image/png");
   });
-  await installStateBridge(page);
+  await installStateBridge(page, { platform: "windows" });
   await page.addInitScript(
     ({ fixture, image }) => {
       window.saved =
@@ -230,7 +230,7 @@ try {
   );
 
   await page.evaluate(() => (window.blockRead = true));
-  await page.locator('[data-action="import"]').first().click();
+  await page.locator('.sidebar [data-action="import"]').click();
   await page.waitForFunction(() => typeof window.releaseRead === "function");
   await page.locator('[data-action="pause-import"]').click();
   await page.locator(".book-title").first().click();

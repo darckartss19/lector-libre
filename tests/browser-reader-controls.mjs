@@ -63,7 +63,7 @@ try {
   page.setDefaultTimeout(15000);
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await installStateBridge(page);
+  await installStateBridge(page, { platform: "windows" });
   await page.addInitScript(
     ({ initial, bytes }) => {
       let callbackId = 0;
@@ -225,6 +225,13 @@ try {
       );
   };
   const scrollToFraction = async (fraction) => {
+    // Let the resize observer and its layout frame finish before simulating user scroll.
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
     await page.locator(".reading-pane").evaluate((pane, fraction) => {
       pane.scrollTop =
         fraction * Math.max(0, pane.scrollHeight - pane.clientHeight);

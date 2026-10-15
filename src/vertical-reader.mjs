@@ -60,6 +60,7 @@ export function createVerticalReader(
   };
   const capture = () => {
     if (navigating) return null;
+    if (resizeTimer || pane.clientWidth !== lastWidth) return lastPosition;
     const index = focusedIndex();
     if (!active.get(index)?.ready) return null;
     const slot = slots[index],
@@ -80,7 +81,12 @@ export function createVerticalReader(
     };
   };
   const announce = () => {
-    if (!destroyed && !navigating && !resizeTimer) {
+    if (
+      !destroyed &&
+      !navigating &&
+      !resizeTimer &&
+      pane.clientWidth === lastWidth
+    ) {
       const position = capture();
       if (position) {
         currentIndex = position.index;
@@ -140,9 +146,18 @@ export function createVerticalReader(
   }
   async function goTo(index, position = {}) {
     if (destroyed || !slots[index]) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = 0;
+    lastWidth = pane.clientWidth;
     const generation = ++navigationGeneration;
     navigating = true;
     currentIndex = index;
+    lastPosition = {
+      ...position,
+      index,
+      chapter: chapters[index].id,
+      fraction: Math.max(0, Math.min(1, Number(position.fraction) || 0)),
+    };
     // Place the viewport before loading, so geometry changes cannot move it to another chapter.
     pane.scrollTop = slots[index].offsetTop;
     await ensureWindow(index);
@@ -191,9 +206,17 @@ export function createVerticalReader(
   });
   observer.observe(pane);
   const onScroll = () => {
-    if (frame || destroyed || navigating) return;
+    if (
+      frame ||
+      destroyed ||
+      navigating ||
+      resizeTimer ||
+      pane.clientWidth !== lastWidth
+    )
+      return;
     frame = requestAnimationFrame(() => {
       frame = 0;
+      if (navigating || resizeTimer || pane.clientWidth !== lastWidth) return;
       const index = focusedIndex();
       currentIndex = index;
       ensureWindow(index).then(announce).catch(onError);

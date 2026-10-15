@@ -545,6 +545,13 @@ fn copy_hashed(mut input: impl Read, mut output: impl Write) -> Result<(String, 
 fn export_to(root: &Path, destination: &Path, value: Value) -> Result<Value, String> {
     let library = portable(crate::state_store::portable_covers(root, value)?)?;
     let books = validate_library(&library)?;
+    let remote_ids: HashSet<&str> = library["books"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|book| book.get("driveSource").is_some())
+        .filter_map(|book| book["id"].as_str())
+        .collect();
     let mut files = Vec::new();
     for (id, format) in &books {
         let path = book_files::path(&root.join("books"), id, format)?;
@@ -561,7 +568,15 @@ fn export_to(root: &Path, destination: &Path, value: Value) -> Result<Value, Str
                     size: meta.len(),
                 });
             }
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => (),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                if !remote_ids.contains(id.as_str()) {
+                    let title = library["books"].as_array().unwrap().iter()
+                        .find(|book| book["id"] == *id)
+                        .and_then(|book| book["title"].as_str())
+                        .unwrap_or(id);
+                    return Err(format!("No se pudo crear una copia completa: falta el archivo de «{title}». Recupera el archivo original y vuelve a intentarlo. La copia anterior se conserva."));
+                }
+            }
             Err(e) => return Err(e.to_string()),
         }
     }
@@ -964,6 +979,16 @@ mod tests {
             .to_str()
             .unwrap()
             .starts_with(".restore-")));
+    }
+    #[test]
+    fn backup_rejects_a_missing_book_without_remote_source_and_preserves_the_previous_zip() {
+        let root = Root::new();
+        let id = hash(b"missing book");
+        let destination = root.0.join("backup.zip");
+        fs::write(&destination, b"previous backup").unwrap();
+        let result = export_to(&root.0, &destination, library(vec![book(&id, "txt")]));
+        assert!(result.is_err());
+        assert_eq!(fs::read(destination).unwrap(), b"previous backup");
     }
     #[test]
     fn backup_round_trip_is_additive_keeps_remote_references_and_reuses_identical_files() {
