@@ -16,18 +16,33 @@ export function documentScanDialog({
 }) {
   const dialog = document.createElement("dialog");
   dialog.className = "document-scan-dialog";
-  dialog.innerHTML = `<h2>Buscar libros en el teléfono</h2><p>Busca documentos visibles y dentro de las carpetas que autorices, incluidas sus subcarpetas. Android puede limitar el acceso a algunas ubicaciones.</p><div class="button-row"><button data-scan="choose">Elegir archivos</button><button data-scan="folder">Añadir carpeta</button><button data-scan="search">Buscar documentos</button><button data-scan="cancel" hidden>Detener búsqueda</button></div><p class="scan-sources quiet" data-content></p><p class="scan-status" role="status"></p><label>Filtrar por nombre<input class="scan-filter" type="search"></label><div class="button-row"><button data-scan="all">Seleccionar resultados</button><button data-scan="none">Quitar selección</button></div><div class="scan-files"></div><div class="library-pagination"><button data-scan="previous">← Anterior</button><span class="scan-page" data-content></span><button data-scan="next">Siguiente →</button></div><div class="button-row"><button data-scan="close">Cerrar</button><button data-scan="import" class="primary">Importar seleccionados</button></div>`;
+  dialog.innerHTML = `<h2>Buscar libros en el teléfono</h2><p>Busca documentos visibles y dentro de las carpetas que autorices, incluidas sus subcarpetas. Android puede limitar el acceso a algunas ubicaciones.</p><p class="scan-access"></p><div class="button-row"><button data-scan="choose">Elegir archivos</button><button data-scan="folder">Añadir carpeta</button><button data-scan="search">Buscar documentos</button><button data-scan="cancel" hidden>Detener búsqueda</button></div><p class="scan-sources quiet" data-content></p><p class="scan-status" role="status"></p><label>Filtrar por nombre<input class="scan-filter" type="search"></label><div class="button-row"><button data-scan="all">Seleccionar resultados</button><button data-scan="none">Quitar selección</button></div><div class="scan-files"></div><div class="library-pagination"><button data-scan="previous">← Anterior</button><span class="scan-page" data-content></span><button data-scan="next">Siguiente →</button></div><div class="button-row"><button data-scan="close">Cerrar</button><button data-scan="import" class="primary">Importar seleccionados</button></div>`;
   root.append(dialog);
   let files = [],
     sources = [],
     selected = new Set(),
     page = 0,
     working = false,
-    closed = false;
+    closed = false,
+    scopedStorage = false,
+    needsFolder = false,
+    interacted = false;
   const status = dialog.querySelector(".scan-status");
-  const message = (text) => {
-    status.textContent = text;
+  const message = (...texts) => {
+    status.replaceChildren();
+    for (const text of texts) {
+      if (status.childNodes.length) status.append(document.createElement("br"));
+      const line = document.createElement("span");
+      line.textContent = text;
+      status.append(line);
+    }
     localize(status);
+  };
+  const access = (result) => {
+    if (result.sources) sources = result.sources;
+    if (result.scopedStorage !== undefined)
+      scopedStorage = result.scopedStorage;
+    if (result.needsFolder !== undefined) needsFolder = result.needsFolder;
   };
   const filtered = () => {
     const query = dialog
@@ -46,6 +61,11 @@ export function documentScanDialog({
     dialog.querySelector(".scan-sources").textContent = sources
       .map((source) => source.name)
       .join(" · ");
+    dialog.querySelector(".scan-access").textContent = needsFolder
+      ? "Pulsa Buscar documentos y autoriza una carpeta en el selector de Android. Se revisarán también sus subcarpetas."
+      : scopedStorage
+        ? "La búsqueda revisa las carpetas autorizadas y sus subcarpetas. Añade otra carpeta si faltan libros."
+        : "Si no aparecen tus libros, añade la carpeta donde están guardados o usa Elegir archivos.";
     dialog.querySelector(".scan-files").innerHTML = rows
       .slice(page * 100, (page + 1) * 100)
       .map(
@@ -68,6 +88,63 @@ export function documentScanDialog({
       `Importar seleccionados (${selected.size})`;
     dialog.querySelector('[data-scan="cancel"]').hidden = !working;
     localize(dialog);
+  };
+  const chooseFolder = async () => {
+    message("Selecciona una carpeta y pulsa Usar esta carpeta en Android.");
+    const result = await invoke("mobile_scan", {
+      command: { action: "folder" },
+    });
+    if (closed) return false;
+    access(result);
+    if (result.cancelled) {
+      message(
+        "No se autorizó ninguna carpeta. Puedes volver a intentarlo o elegir archivos.",
+      );
+      return false;
+    }
+    return true;
+  };
+  const search = async () => {
+    files = [];
+    selected.clear();
+    page = 0;
+    render();
+    message("Buscando documentos…");
+    let result = await invoke("mobile_scan", { command: { action: "scan" } });
+    if (closed) return;
+    access(result);
+    if (result.needsFolder) {
+      if (!(await chooseFolder())) return;
+      message("Buscando documentos…");
+      result = await invoke("mobile_scan", { command: { action: "scan" } });
+      if (closed) return;
+      access(result);
+      if (result.needsFolder) {
+        message(
+          "No se pudo acceder a la carpeta. Vuelve a autorizarla o usa Elegir archivos.",
+        );
+        return;
+      }
+    }
+    files = result.files || [];
+    const messages = [
+      result.cancelled
+        ? "Búsqueda detenida. Puedes importar los resultados encontrados."
+        : files.length
+          ? "Selecciona los documentos que quieras importar."
+          : result.legacyPermissionDenied
+            ? "Android no concedió acceso a los archivos. Autoriza una carpeta con Añadir carpeta o usa Elegir archivos."
+            : "No se encontraron libros. Añade una carpeta para ampliar la búsqueda.",
+    ];
+    if (result.unreadableFolders)
+      messages.push(
+        "Algunas carpetas no se pudieron leer. Revisa sus permisos y vuelve a buscar.",
+      );
+    if (result.limitedIndex)
+      messages.push(
+        "Android limitó la búsqueda general. Añade una carpeta para buscar dentro de ella.",
+      );
+    message(...messages);
   };
   const close = () => dialog.close();
   dialog.addEventListener(
@@ -116,37 +193,13 @@ export function documentScanDialog({
       return render();
     }
     working = true;
+    interacted = true;
     render();
     try {
       if (action === "folder") {
-        const result = await invoke("mobile_scan", {
-          command: { action: "folder" },
-        });
-        if (result.sources) sources = result.sources;
-        message(
-          "Pulsa Buscar documentos para revisar las carpetas autorizadas.",
-        );
+        if (await chooseFolder()) await search();
       } else if (action === "search") {
-        message("Buscando documentos…");
-        const result = await invoke("mobile_scan", {
-          command: { action: "scan" },
-        });
-        if (closed) return;
-        files = result.files;
-        sources = result.sources;
-        selected.clear();
-        page = 0;
-        message(
-          result.cancelled
-            ? "Búsqueda detenida. Puedes importar los resultados encontrados."
-            : files.length
-              ? "Selecciona los documentos que quieras importar."
-              : "No se encontraron libros. Añade una carpeta para ampliar la búsqueda.",
-        );
-        if (result.unreadableFolders)
-          message(
-            "Algunas carpetas no se pudieron leer. Revisa sus permisos y vuelve a buscar.",
-          );
+        await search();
       } else if (action === "import") {
         message("Preparando documentos…");
         await onImport([...selected]);
@@ -163,7 +216,8 @@ export function documentScanDialog({
   dialog.showModal();
   invoke("mobile_scan", { command: { action: "sources" } })
     .then((result) => {
-      sources = result.sources;
+      if (closed || interacted) return;
+      access(result);
       render();
     })
     .catch((error) => message(String(error)));

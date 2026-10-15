@@ -1,6 +1,6 @@
 # Lector libre
 
-Lector gratuito y de código abierto para **Windows y Android**, con biblioteca personal, lectura sin conexión, voz y personalización. Esta es la primera vista previa pública, **0.12.1**. Queremos probarla con más dispositivos y mejorarla con las reseñas de la comunidad.
+Lector gratuito y de código abierto para **Windows y Android**, con biblioteca personal, lectura sin conexión, voz y personalización. La actualización para Android es **0.12.2**, con la búsqueda de documentos corregida. Windows sigue disponible en **0.12.1**. Queremos probarla con más dispositivos y mejorarla con las reseñas de la comunidad.
 
 **La sincronización con Google Drive está desactivada en esta entrega, tanto en Windows como en Android. Está prevista para una versión futura.** Tus libros, progreso y ajustes se guardan en el dispositivo. Puedes trasladarlos mediante una copia ZIP.
 
@@ -11,12 +11,20 @@ Lector gratuito y de código abierto para **Windows y Android**, con biblioteca 
 | Archivo | Para qué sirve |
 | --- | --- |
 | Lector-libre-0.12.1-Windows.exe | Instalador para Windows de 64 bits |
-| Lector-libre-0.12.1-Android-arm64.apk | Teléfonos Android de 64 bits |
-| Lector-libre-0.12.1-MEmu.apk | MEmu y dispositivos x86/x86_64 |
-| Lector-libre-0.12.1-codigo-fuente.zip | Código fuente de esta versión |
+| Lector-libre-0.12.2-Android-arm64.apk | Teléfonos Android de 64 bits |
+| Lector-libre-0.12.2-MEmu.apk | MEmu y dispositivos x86/x86_64 |
+| Lector-libre-0.12.2-codigo-fuente.zip | Código fuente de esta versión |
 | SHA256SUMS.txt | Comprobar que los archivos descargados coinciden con la entrega |
 
 Instala una actualización sobre la versión anterior para conservar los datos. Antes de probar una entrega nueva, puedes exportar una copia ZIP desde Personalizar y sincronizar. La versión de Windows no tiene firma de distribución certificada; los APK de esta vista previa usan una firma de desarrollo.
+
+## Corrección de Android 0.12.2
+
+Buscar documentos solicita autorizar una carpeta cuando hace falta y empieza la búsqueda al confirmarla. Recuerda las carpetas permitidas, incluye subcarpetas y explica los accesos denegados o retirados. El flujo fue confirmado en un Redmi Note 15 Pro.
+
+En Android reciente, el permiso se concede en el selector del sistema. Si Android bloquea la raíz de Descargas o del teléfono, selecciona una subcarpeta o usa Elegir archivos.
+
+[Descargar Android 0.12.2](https://github.com/darckartss19/lector-libre/releases/tag/v0.12.2) · [Descargar Windows 0.12.1](https://github.com/darckartss19/lector-libre/releases/download/v0.12.1/Lector-libre-0.12.1-Windows.exe)
 
 ## Qué puedes probar
 

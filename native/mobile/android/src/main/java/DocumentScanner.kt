@@ -1,8 +1,11 @@
 package org.lectorlibre.mobile
 
 import android.app.Activity
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import androidx.activity.result.ActivityResult
@@ -12,6 +15,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.util.ArrayDeque
+import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -22,7 +26,25 @@ class DocumentScanner(private val activity: Activity) {
     private val busy = AtomicBoolean(false)
     private val records = LinkedHashMap<String, JSONObject>()
 
-    fun sources(): JSONArray = JSONArray(preferences.getString("sources", "[]"))
+    fun sources(): JSONArray {
+        val saved = JSONArray(preferences.getString("sources", "[]"))
+        val grants = activity.contentResolver.persistedUriPermissions
+            .filter { it.isReadPermission }.map { it.uri.toString() }.toSet()
+        for (i in 0 until saved.length()) {
+            val root = saved.getJSONObject(i)
+            root.put("readable", root.getString("uri") in grants)
+        }
+        return saved
+    }
+
+    fun accessState(): JSObject {
+        val roots = sources()
+        val readable = (0 until roots.length()).count { roots.getJSONObject(it).optBoolean("readable") }
+        val scoped = Build.VERSION.SDK_INT >= 29
+        return JSObject().put("sources", roots).put("scopedStorage", scoped)
+            .put("needsFolder", scoped && readable == 0)
+            .put("legacyPermissionDenied", !scoped && activity.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
+    }
 
     fun folderResult(invoke: Invoke, result: ActivityResult) {
         if (result.resultCode != Activity.RESULT_OK) {
@@ -43,7 +65,7 @@ class DocumentScanner(private val activity: Activity) {
                 roots.put(JSONObject().put("uri", uri.toString()).put("name", name))
                 preferences.edit().putString("sources", roots.toString()).apply()
             }
-            invoke.resolve(JSObject().put("sources", roots))
+            invoke.resolve(accessState())
         } catch (error: Exception) {
             invoke.reject("No se pudo conservar el permiso de esa carpeta.")
         }
@@ -69,18 +91,23 @@ class DocumentScanner(private val activity: Activity) {
     }
 
     fun scan(invoke: Invoke, extensions: List<String>) {
+        val access = accessState()
+        if (access.getBoolean("needsFolder")) {
+            invoke.resolve(access.put("files", JSONArray()))
+            return
+        }
         if (!busy.compareAndSet(false, true)) {
             invoke.reject("Ya hay una búsqueda en curso.")
             return
         }
         cancelled.set(false)
         worker.execute {
-            try {
+            val result = try {
                 val allowed = extensions.filter { it.matches(Regex("[a-z0-9]+")) }.toSet()
                 val found = LinkedHashMap<String, JSONObject>()
                 val omitted = ArrayList<String>()
                 fun add(uri: Uri, name: String, size: Long, location: String) {
-                    val extension = name.substringAfterLast('.', "").lowercase()
+                    val extension = name.substringAfterLast('.', "").lowercase(Locale.ROOT)
                     if (extension !in allowed) return
                     val key = MessageDigest.getInstance("SHA-256").digest(uri.toString().toByteArray())
                         .joinToString("") { "%02x".format(it) }
@@ -89,20 +116,27 @@ class DocumentScanner(private val activity: Activity) {
                         .put("location", location)
                 }
                 // MediaStore only returns the files visible to this application.
-                try {
+                var limitedIndex = false
+                if (!access.getBoolean("legacyPermissionDenied")) try {
                     val base = MediaStore.Files.getContentUri("external")
                     val columns = if (android.os.Build.VERSION.SDK_INT < 29) arrayOf("_id", "_display_name", "_size", "_data") else arrayOf("_id", "_display_name", "_size")
-                    activity.contentResolver.query(base, columns, null, null, null)?.use { cursor ->
+                    val cursor = activity.contentResolver.query(base, columns, null, null, null)
+                    if (cursor == null) limitedIndex = true
+                    cursor?.use {
                         while (!cancelled.get() && cursor.moveToNext()) {
                             val name = cursor.getString(1) ?: if (columns.size == 4) cursor.getString(3)?.substringAfterLast('/') else null
                             add(Uri.withAppendedPath(base, cursor.getLong(0).toString()), name ?: "", cursor.getLong(2), "Archivos visibles del teléfono")
                         }
                     }
-                } catch (_: SecurityException) { /* Folder permissions remain available. */ }
+                } catch (_: Exception) { limitedIndex = true }
                 val roots = sources()
                 for (i in 0 until roots.length()) {
                     if (cancelled.get()) break
                     val root = roots.getJSONObject(i)
+                    if (!root.optBoolean("readable")) {
+                        omitted.add(root.getString("name"))
+                        continue
+                    }
                     val tree = Uri.parse(root.getString("uri"))
                     val queue = ArrayDeque<Pair<String, String>>()
                     val visited = HashSet<String>()
@@ -113,7 +147,9 @@ class DocumentScanner(private val activity: Activity) {
                         try {
                             val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, id)
                             val projection = arrayOf("document_id", "_display_name", "mime_type", "_size", "flags")
-                            activity.contentResolver.query(children, projection, null, null, null)?.use { cursor ->
+                            val cursor = activity.contentResolver.query(children, projection, null, null, null)
+                            if (cursor == null) omitted.add(location)
+                            cursor?.use {
                                 while (!cancelled.get() && cursor.moveToNext()) {
                                     val childId = cursor.getString(0)
                                     val name = cursor.getString(1) ?: ""
@@ -129,16 +165,19 @@ class DocumentScanner(private val activity: Activity) {
                 }
                 synchronized(records) { records.clear(); records.putAll(found) }
                 val rows = JSONArray()
-                found.values.sortedBy { it.getString("name").lowercase() }.forEach { row ->
+                found.values.sortedBy { it.getString("name").lowercase(Locale.ROOT) }.forEach { row ->
                     val visible = JSONObject(row.toString())
                     visible.remove("uri")
                     rows.put(visible)
                 }
-                invoke.resolve(JSObject().put("files", rows).put("sources", roots)
-                    .put("cancelled", cancelled.get()).put("unreadableFolders", omitted.distinct().size))
+                accessState().put("files", rows).put("sources", roots)
+                    .put("cancelled", cancelled.get()).put("unreadableFolders", omitted.distinct().size)
+                    .put("limitedIndex", limitedIndex)
             } catch (_: Exception) {
-                invoke.reject("No se pudo completar la búsqueda. Puedes autorizar una carpeta y volver a buscar.")
+                null
             } finally { busy.set(false) }
+            if (result != null) invoke.resolve(result)
+            else invoke.reject("No se pudo completar la búsqueda. Puedes autorizar una carpeta y volver a buscar.")
         }
     }
 }

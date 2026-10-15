@@ -16,7 +16,7 @@ body:
     id: version
     attributes:
       label: Versión del lector
-      placeholder: 0.12.1
+      placeholder: 0.12.2
     validations:
       required: true
   - type: input

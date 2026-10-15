@@ -6,6 +6,46 @@ export const UI_LANGUAGES = [
 // Only interface nodes are localized. Book text and user metadata are excluded.
 const entries = [
   [
+    "Pulsa Buscar documentos y autoriza una carpeta en el selector de Android. Se revisarán también sus subcarpetas.",
+    "Press Search documents and authorize a folder in the Android picker. Its subfolders will also be searched.",
+    "Pressione Buscar documentos e autorize uma pasta no seletor do Android. Suas subpastas também serão verificadas.",
+  ],
+  [
+    "La búsqueda revisa las carpetas autorizadas y sus subcarpetas. Añade otra carpeta si faltan libros.",
+    "Search checks authorized folders and their subfolders. Add another folder if books are missing.",
+    "A busca verifica as pastas autorizadas e suas subpastas. Adicione outra pasta se faltarem livros.",
+  ],
+  [
+    "Si no aparecen tus libros, añade la carpeta donde están guardados o usa Elegir archivos.",
+    "If your books do not appear, add the folder where they are stored or use Choose files.",
+    "Se seus livros não aparecerem, adicione a pasta onde estão salvos ou use Escolher arquivos.",
+  ],
+  [
+    "Selecciona una carpeta y pulsa Usar esta carpeta en Android.",
+    "Select a folder and press Use this folder in Android.",
+    "Selecione uma pasta e pressione Usar esta pasta no Android.",
+  ],
+  [
+    "No se autorizó ninguna carpeta. Puedes volver a intentarlo o elegir archivos.",
+    "No folder was authorized. You can try again or choose files.",
+    "Nenhuma pasta foi autorizada. Você pode tentar novamente ou escolher arquivos.",
+  ],
+  [
+    "No se pudo acceder a la carpeta. Vuelve a autorizarla o usa Elegir archivos.",
+    "The folder could not be accessed. Authorize it again or use Choose files.",
+    "Não foi possível acessar a pasta. Autorize-a novamente ou use Escolher arquivos.",
+  ],
+  [
+    "Android no concedió acceso a los archivos. Autoriza una carpeta con Añadir carpeta o usa Elegir archivos.",
+    "Android did not grant file access. Authorize a folder using Add folder or use Choose files.",
+    "O Android não concedeu acesso aos arquivos. Autorize uma pasta com Adicionar pasta ou use Escolher arquivos.",
+  ],
+  [
+    "Android limitó la búsqueda general. Añade una carpeta para buscar dentro de ella.",
+    "Android limited the general search. Add a folder to search inside it.",
+    "O Android limitou a busca geral. Adicione uma pasta para buscar dentro dela.",
+  ],
+  [
     "El archivo de este libro no está en el dispositivo. Importa el original para poder leerlo.",
     "This book file is not on this device. Import the original to read it.",
     "O arquivo deste livro não está neste dispositivo. Importe o original para lê-lo.",

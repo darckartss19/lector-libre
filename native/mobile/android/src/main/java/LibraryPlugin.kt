@@ -117,9 +117,11 @@ class LibraryPlugin(private val activity: Activity) : Plugin(activity) {
     fun scanAction(invoke: Invoke) {
         val args = invoke.parseArgs(ScanArgs::class.java)
         when (args.action) {
-            "sources" -> invoke.resolve(JSObject().put("sources", scanner.sources()))
+            "sources" -> invoke.resolve(scanner.accessState())
             "scan" -> {
-                if (Build.VERSION.SDK_INT <= 32 && getPermissionStates()["fileSearch"] != PermissionState.GRANTED) requestPermissionForAlias("fileSearch", invoke, "fileSearchResult")
+                val roots = scanner.sources()
+                val hasFolder = (0 until roots.length()).any { roots.getJSONObject(it).optBoolean("readable") }
+                if (Build.VERSION.SDK_INT <= 28 && !hasFolder && getPermissionStates()["fileSearch"] != PermissionState.GRANTED) requestPermissionForAlias("fileSearch", invoke, "fileSearchResult")
                 else scanner.scan(invoke, args.extensions)
             }
             "cancel" -> scanner.cancel(invoke)
