@@ -4,6 +4,16 @@ Lector gratuito y de código abierto para **Windows y Android**, con biblioteca 
 
 **La sincronización con Google Drive está desactivada en esta entrega, tanto en Windows como en Android. Está prevista para una versión futura.** Tus libros, progreso y ajustes se guardan en el dispositivo. Puedes trasladarlos mediante una copia ZIP.
 
+## Vista previa 0.12.6
+
+[Descargar Lector libre 0.12.6 — Vista previa](https://github.com/darckartss19/lector-libre/releases/tag/v0.12.6-preview.1)
+
+Incluye el creador de imágenes con texto libre, quince fondos fotográficos, la galería simplificada y mejoras de importación, restauración y privacidad.
+
+[Windows x64](https://github.com/darckartss19/lector-libre/releases/download/v0.12.6-preview.1/Lector-libre-0.12.6-Windows.exe) · [Android arm64](https://github.com/darckartss19/lector-libre/releases/download/v0.12.6-preview.1/Lector-libre-0.12.6-Android-arm64.apk) · [MEmu](https://github.com/darckartss19/lector-libre/releases/download/v0.12.6-preview.1/Lector-libre-0.12.6-MEmu.apk)
+
+Es una versión preliminar: persiste un pequeño desplazamiento al sincronizar y hay comprobaciones de seguridad pendientes. Consulta [el estado de validación](docs/VALIDACION-0.12.6.md). La sincronización con Drive continúa desactivada.
+
 ## Cambios de 0.12.4
 
 - Diez paletas revisadas: papel cálido, sepia y niebla, más siete opciones nocturnas con matices menos saturados. Se conservan los nombres y las preferencias existentes.
