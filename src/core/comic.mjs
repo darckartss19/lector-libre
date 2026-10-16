@@ -1,3 +1,4 @@
+import { createArchiveBudget } from "./archive-resource.mjs";
 import {
   archiveReader,
   imageType,
@@ -12,7 +13,7 @@ const pageOrder = new Intl.Collator("en", {
 });
 
 export async function parseComic(bytes, filename, options = {}) {
-  const archive = archiveReader(bytes);
+  const archive = archiveReader(bytes, options.archiveLimits);
   const pages = archive.names
     .filter(
       (path) =>
@@ -64,8 +65,14 @@ export async function parseComic(bytes, filename, options = {}) {
     id: `cbz-${path}`,
     title: `Página ${index + 1}`,
   }));
-  const load = (index, { textOnly = false } = {}) => {
-    const image = textOnly ? null : archive.image(pages[index]);
+  const load = (
+    index,
+    {
+      textOnly = false,
+      budget = createArchiveBudget(options.archiveLimits),
+    } = {},
+  ) => {
+    const image = textOnly ? null : archive.image(pages[index], { budget });
     return {
       text: "",
       html: image
@@ -74,7 +81,10 @@ export async function parseComic(bytes, filename, options = {}) {
     };
   };
   if (!options.lazy) {
-    chapters.forEach((chapter, index) => Object.assign(chapter, load(index)));
+    const budget = createArchiveBudget(options.archiveLimits);
+    chapters.forEach((chapter, index) =>
+      Object.assign(chapter, load(index, { budget })),
+    );
     archive.dispose();
     return { ...metadata, chapters };
   }

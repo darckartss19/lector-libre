@@ -1,6 +1,11 @@
-import { unzipSync, strFromU8 } from "fflate";
+import { strFromU8 } from "fflate";
 import DOMPurify from "dompurify";
 import { chapterCache } from "./chapter-cache.mjs";
+import {
+  readArchive,
+  createArchiveBudget,
+  ArchiveResourceError,
+} from "./archive-resource.mjs";
 
 export function resolveResource(base, href) {
   if (/^[a-z][a-z\d+.-]*:|^\/\//i.test(href))
@@ -18,10 +23,11 @@ export function resolveResource(base, href) {
   }
   return result.join("/");
 }
-export function unzipBook(bytes, paths = null) {
+export function unzipBook(bytes, paths = null, options = {}) {
   const selected = paths === null ? null : new Set(paths);
-  return unzipSync(bytes, {
-    filter: (file) => selected === null || selected.has(file.name),
+  return readArchive(bytes, {
+    ...options,
+    filter: (entry) => selected === null || selected.has(entry.name),
   });
 }
 const xml = (text) => {
@@ -152,7 +158,12 @@ export function parseBook(
   bytes,
   format,
   filename,
-  { metadataOnly = false, seriesOnly = false, lazy = false } = {},
+  {
+    metadataOnly = false,
+    seriesOnly = false,
+    lazy = false,
+    archiveLimits,
+  } = {},
 ) {
   if (format === "txt") {
     if (metadataOnly || seriesOnly)
@@ -190,13 +201,16 @@ export function parseBook(
       ],
     };
   }
-  let files = unzipBook(bytes, ["META-INF/container.xml"]);
+  const parseBudget = createArchiveBudget(archiveLimits);
+  let files = unzipBook(bytes, ["META-INF/container.xml"], {
+    budget: parseBudget,
+  });
   const container = xml(
     strFromU8(files["META-INF/container.xml"] ?? new Uint8Array()),
   );
   const opfPath = elements(container, "rootfile")[0]?.getAttribute("full-path");
   if (!opfPath) throw new Error("No se encontró el índice del EPUB.");
-  files = unzipBook(bytes, [opfPath]);
+  files = unzipBook(bytes, [opfPath], { budget: parseBudget });
   if (!files[opfPath]) throw new Error("No se encontró el índice del EPUB.");
   const opf = xml(strFromU8(files[opfPath]));
   const metadata = {
@@ -233,7 +247,9 @@ export function parseBook(
   }
   if (metadataOnly) {
     // Importing needs no chapter DOM or illustration buffers, regardless of book size.
-    const covers = coverItem ? unzipBook(bytes, [coverItem.path]) : {};
+    const covers = coverItem
+      ? unzipBook(bytes, [coverItem.path], { budget: parseBudget })
+      : {};
     return {
       ...metadata,
       cover: coverItem
@@ -261,7 +277,9 @@ export function parseBook(
     );
     for (const item of navigation) {
       try {
-        const content = unzipBook(bytes, [item.path])[item.path];
+        const content = unzipBook(bytes, [item.path], { budget: parseBudget })[
+          item.path
+        ];
         if (!content) continue;
         const nav = new DOMParser().parseFromString(
           strFromU8(content),
@@ -284,7 +302,8 @@ export function parseBook(
           const path = resolveResource(item.path, href);
           if (!titles.has(path)) titles.set(path, title.trim());
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof ArchiveResourceError) throw error;
         /* A damaged optional TOC must not prevent chapter reading. */
       }
     }
@@ -296,7 +315,8 @@ export function parseBook(
     const load = (index, { textOnly = false } = {}) => {
       if (!archive) throw new Error("El libro ya está cerrado.");
       const { item } = entries[index];
-      const files = unzipBook(archive, [item.path]);
+      const budget = createArchiveBudget(archiveLimits);
+      const files = unzipBook(archive, [item.path], { budget });
       if (!files[item.path])
         throw new Error("No se encontró este capítulo del EPUB.");
       const source = new DOMParser().parseFromString(
@@ -310,7 +330,15 @@ export function parseBook(
           return [];
         }
       });
-      if (!textOnly) Object.assign(files, unzipBook(archive, images));
+      if (!textOnly)
+        Object.assign(
+          files,
+          unzipBook(
+            archive,
+            [...new Set(images.filter((p) => p !== item.path))],
+            { budget },
+          ),
+        );
       return chapterContent(files, item, resources, index);
     };
     const cache = chapterCache(chapters, load);
@@ -333,7 +361,7 @@ export function parseBook(
   // Leave unrelated fonts, audio, video and attachments compressed.
   for (const item of items.values())
     if (/^image\//i.test(item.type ?? "")) paths.push(item.path);
-  files = unzipBook(bytes, paths);
+  files = unzipBook(bytes, paths, { budget: parseBudget });
   const chapters = [];
   for (const ref of elements(opf, "itemref")) {
     if (ref.getAttribute("linear") === "no") continue;
