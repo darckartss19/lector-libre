@@ -13,13 +13,14 @@ parser.add_argument('--output', type=Path, default=root / 'work' / f'source-{ver
 output = parser.parse_args().output.resolve()
 output.mkdir(parents=True, exist_ok=False)
 source = output / 'source'
-folders = ['public/quote-backgrounds', 'src', 'tests', 'native', 'scripts', 'artwork', '.github', 'src-tauri/src',
+folders = ['public/quote-backgrounds', 'src', 'tests', 'native', 'scripts', 'artwork', 'docs', '.github', 'src-tauri/src',
            'src-tauri/icons', 'src-tauri/capabilities', 'src-tauri/gen/android']
 files = ['.editorconfig', '.prettierrc.json', '.gitignore', 'LICENSE', 'THIRD_PARTY_NOTICES.txt',
          'package.json', 'pnpm-lock.yaml', 'index.html', 'vite.config.mjs', 'README.md',
          'ANDROID.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'PRIVACIDAD.md', 'VALIDACION.md',
          'src-tauri/Cargo.toml', 'src-tauri/Cargo.lock', 'src-tauri/build.rs',
-         'src-tauri/tauri.conf.json', 'src-tauri/tauri.android.conf.json']
+         'src-tauri/tauri.conf.json', 'src-tauri/tauri.android.conf.json',
+         'src-tauri/tauri.macos.conf.json', 'src-tauri/tauri.linux.conf.json']
 excluded = {'build', 'target', 'jniLibs', '.gradle', '.kotlin', '.idea', 'node_modules', '.git', '__pycache__'}
 local_names = {'local.properties', 'tauri.settings.gradle', 'tauri.properties'}
 private_extensions = {'.apk', '.aab', '.so', '.dll', '.exe', '.pdb', '.jks', '.keystore', '.vault', '.onnx'}
