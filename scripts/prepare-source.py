@@ -13,7 +13,7 @@ parser.add_argument('--output', type=Path, default=root / 'work' / f'source-{ver
 output = parser.parse_args().output.resolve()
 output.mkdir(parents=True, exist_ok=False)
 source = output / 'source'
-folders = ['src', 'tests', 'native', 'scripts', 'artwork', '.github', 'src-tauri/src',
+folders = ['public/quote-backgrounds', 'src', 'tests', 'native', 'scripts', 'artwork', '.github', 'src-tauri/src',
            'src-tauri/icons', 'src-tauri/capabilities', 'src-tauri/gen/android']
 files = ['.editorconfig', '.prettierrc.json', '.gitignore', 'LICENSE', 'THIRD_PARTY_NOTICES.txt',
          'package.json', 'pnpm-lock.yaml', 'index.html', 'vite.config.mjs', 'README.md',

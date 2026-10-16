@@ -738,7 +738,7 @@ function shell() {
     )
     .join(
       "",
-    )}<button data-action="series-groups" class="${route === "series" || (series && route === "library") ? "active" : ""}">${icon("spines")}Sagas<span>${sagas.length}</span></button><button data-action="collections-groups" class="${route === "collections" || (collection && route === "library") ? "active" : ""}">${icon("grid")}Colecciones<span>${collections.length}</span></button></nav><div class="genre-label">ESTANTERÍAS <span>${shelves.length}</span></div><nav class="genres">${
+    )}<button data-action="create-free-quote">${icon("image")}Crear imagen</button><button data-action="series-groups" class="${route === "series" || (series && route === "library") ? "active" : ""}">${icon("spines")}Sagas<span>${sagas.length}</span></button><button data-action="collections-groups" class="${route === "collections" || (collection && route === "library") ? "active" : ""}">${icon("grid")}Colecciones<span>${collections.length}</span></button></nav><div class="genre-label">ESTANTERÍAS <span>${shelves.length}</span></div><nav class="genres">${
     shelves
       .map(
         (g) =>
@@ -2265,8 +2265,7 @@ function createQuoteCard() {
     return;
   }
   const book = library.books.find((book) => book.id === current);
-  quoteCardDialog({
-    root,
+  openQuoteCard({
     quote: anchor?.quote ?? "",
     hint:
       originalPdf && !anchor?.quote
@@ -2276,6 +2275,12 @@ function createQuoteCard() {
           : "",
     title: book.title,
     author: book.author,
+  });
+}
+function openQuoteCard(content = {}) {
+  quoteCardDialog({
+    root,
+    ...content,
     localize: ui,
     onBackground: () => invoke("select_quote_background"),
     onSave: (value) => invoke("save_quote_image", value),
@@ -2530,6 +2535,9 @@ async function handleExtraAction(button) {
       break;
     case "create-quote":
       createQuoteCard();
+      break;
+    case "create-free-quote":
+      openQuoteCard({ freeform: true });
       break;
     case "focus-mode":
       await toggleFocusMode();

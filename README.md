@@ -52,7 +52,7 @@ En Android reciente, el permiso se concede en el selector del sistema. Si Androi
 - Lectura en voz alta con idioma, voz, velocidad y temporizador. Windows permite usar voces del sistema o descargar voces compatibles; Android usa voces offline de su motor de texto a voz. No se generan archivos de audiolibro.
 - En Android, la voz continúa en segundo plano y tiene controles en la notificación. Las restricciones de batería de cada fabricante pueden afectar la reproducción.
 - En Android, buscar documentos visibles y autorizar carpetas con subcarpetas. Puedes filtrar y elegir cuáles importar; los archivos iguales no crean libros duplicados. Android puede limitar el acceso a algunas ubicaciones.
-- Tarjetas de citas con fondos, tipografía y PNG; Android permite abrir el menú para compartir la imagen. En escaneos puedes escribir la cita manualmente.
+- Creador de imágenes con texto: desde un libro toma el fragmento seleccionado y permite incluir título y autor; desde **Crear imagen**, en la biblioteca, puedes escribir una frase, reflexión o poema libre. Comparte el mismo editor para PC y teléfonos, con 15 fondos fotográficos sin conexión, ocho estilos de color, tipografía y PNG. En escaneos puedes escribir la cita manualmente; Android abre el menú de compartir.
 
 ## Reseñas, errores e ideas
 
