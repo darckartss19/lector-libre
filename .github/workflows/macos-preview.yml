@@ -1,0 +1,65 @@
+name: macOS preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/apple-builds-0.12.6]
+  pull_request:
+    paths:
+      - '.github/workflows/macos-preview.yml'
+      - 'src-tauri/**'
+      - 'native/**'
+      - 'src/**'
+      - 'scripts/*macos*'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: aarch64-apple-darwin
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Set up pinned build tools
+        run: |
+          npm install --global pnpm@11.25.0
+          rustup toolchain install 1.99.0 --profile minimal
+          rustup default 1.99.0
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Check formatting and JavaScript tests
+        run: |
+          pnpm format:check
+          pnpm test
+      - name: Test Rust on the native architecture
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+      - name: Build and verify the installer
+        run: bash scripts/build-macos.sh '${{ matrix.target }}'
+      - name: Verify native and frontend startup
+        run: python3 scripts/check-macos-startup.py 'src-tauri/target/${{ matrix.target }}/release/bundle/macos/Lector libre.app'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Lector-libre-0.12.6-${{ matrix.target }}
+          path: work/macos-${{ matrix.target }}/
+          if-no-files-found: error
+          retention-days: 14
