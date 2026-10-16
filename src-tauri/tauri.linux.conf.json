@@ -1,0 +1,26 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "targets": ["deb"],
+    "publisher": "Lector libre contributors",
+    "homepage": "https://github.com/darckartss19/lector-libre",
+    "category": "Education",
+    "shortDescription": "Lector local de libros y documentos",
+    "longDescription": "Vista previa para Linux con biblioteca y lectura local. La voz nativa y Google Drive no están disponibles en esta plataforma.",
+    "resources": {
+      "../LICENSE": "LICENSE",
+      "../THIRD_PARTY_NOTICES.txt": "THIRD_PARTY_NOTICES.txt"
+    },
+    "linux": {
+      "deb": {
+        "depends": ["libc6 (>= 2.39)", "libssl3t64 | libssl3"],
+        "section": "education",
+        "priority": "optional",
+        "files": {
+          "/usr/share/doc/lector-libre/copyright": "../LICENSE",
+          "/usr/share/doc/lector-libre/THIRD_PARTY_NOTICES.txt": "../THIRD_PARTY_NOTICES.txt"
+        }
+      }
+    }
+  }
+}
