@@ -20,7 +20,8 @@ files = ['.editorconfig', '.prettierrc.json', '.gitignore', 'LICENSE', 'THIRD_PA
          'ANDROID.md', 'CHANGELOG.md', 'CONTRIBUTING.md', 'PRIVACIDAD.md', 'VALIDACION.md',
          'src-tauri/Cargo.toml', 'src-tauri/Cargo.lock', 'src-tauri/build.rs',
          'src-tauri/tauri.conf.json', 'src-tauri/tauri.android.conf.json',
-         'src-tauri/tauri.macos.conf.json', 'src-tauri/tauri.linux.conf.json']
+         'src-tauri/tauri.macos.conf.json', 'src-tauri/tauri.linux.conf.json',
+         'src-tauri/tauri.ios.conf.json']
 excluded = {'build', 'target', 'jniLibs', '.gradle', '.kotlin', '.idea', 'node_modules', '.git', '__pycache__'}
 local_names = {'local.properties', 'tauri.settings.gradle', 'tauri.properties'}
 private_extensions = {'.apk', '.aab', '.so', '.dll', '.exe', '.pdb', '.jks', '.keystore', '.vault', '.onnx'}

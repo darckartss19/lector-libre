@@ -1,0 +1,68 @@
+name: iOS preparation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/ios-xcode-0.12.6]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-preparation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Prepare Apple build tools without account credentials
+        run: |
+          npm install --global pnpm@11.25.0
+          rustup toolchain install 1.99.0 --profile minimal
+          rustup default 1.99.0
+          command -v pod >/dev/null || brew install cocoapods
+          command -v xcodegen >/dev/null || brew install xcodegen
+      - name: Generate Xcode project
+        run: bash scripts/prepare-ios.sh --no-open
+      - name: Compile for simulator without device signing
+        run: pnpm tauri ios build --ci --target aarch64-sim --no-sign -- --locked
+      - name: Package simulator app and portable source separately
+        run: |
+          python3 - <<'PY'
+          import plistlib
+          import shutil
+          from pathlib import Path
+          apps = []
+          for app in Path('src-tauri/gen/apple').rglob('*.app'):
+              info = app / 'Info.plist'
+              if info.is_file():
+                  data = plistlib.loads(info.read_bytes())
+                  if data.get('CFBundleIdentifier') == 'org.lectorlibre.reader' and data.get('DTPlatformName') == 'iphonesimulator':
+                      apps.append(app)
+          if not apps:
+              raise SystemExit('No iOS simulator app with the expected identifier was produced')
+          output = Path('work/ios-preparation')
+          output.mkdir(parents=True)
+          shutil.copytree(max(apps, key=lambda path: path.stat().st_mtime_ns), output / 'Lector libre.app', symlinks=True)
+          PY
+          ditto -c -k --keepParent 'work/ios-preparation/Lector libre.app' work/ios-preparation/Lector-libre-0.12.6-iOS-Simulator.zip
+          python3 scripts/prepare-source.py --output work/ios-source
+          cp work/ios-source/Lector-libre-0.12.6-codigo-fuente.zip work/ios-preparation/Lector-libre-0.12.6-iOS-Xcode.zip
+          cd work/ios-preparation
+          shasum -a 256 ./*.zip > SHA256SUMS.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Lector-libre-0.12.6-iOS-preparation
+          path: |
+            work/ios-preparation/*.zip
+            work/ios-preparation/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14

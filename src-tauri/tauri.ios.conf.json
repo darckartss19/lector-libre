@@ -1,0 +1,9 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "resources": ["../LICENSE", "../THIRD_PARTY_NOTICES.txt"],
+    "iOS": {
+      "minimumSystemVersion": "15.0"
+    }
+  }
+}

@@ -29,3 +29,6 @@ backups/
 **/tauri.settings.gradle
 
 graphify-out/
+
+# Generated locally with Xcode paths and signing settings.
+/src-tauri/gen/apple/
