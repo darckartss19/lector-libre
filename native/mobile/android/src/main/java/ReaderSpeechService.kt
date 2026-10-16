@@ -307,7 +307,8 @@ class ReaderSpeechService : Service() {
         val state = if (status == "playing") PlaybackState.STATE_PLAYING else if (status in listOf("idle", "finished")) PlaybackState.STATE_STOPPED else PlaybackState.STATE_PAUSED
         media.setPlaybackState(PlaybackState.Builder().setActions(PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_STOP or PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS)
             .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f).build())
-        program?.let { media.setMetadata(MediaMetadata.Builder().putString(MediaMetadata.METADATA_KEY_TITLE, it.title).build()) }
+        // Keep book identity in app state; system surfaces always use a generic title.
+        media.setMetadata(MediaMetadata.Builder().putString(MediaMetadata.METADATA_KEY_TITLE, GENERIC_TITLE).build())
     }
 
     private fun foreground() { updateMedia(); startForeground(NOTIFICATION, notification()) }
@@ -323,9 +324,9 @@ class ReaderSpeechService : Service() {
         }
         val launch = packageManager.getLaunchIntentForPackage(packageName)!!
         val content = PendingIntent.getActivity(this, 0, launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        return builder.setSmallIcon(android.R.drawable.ic_media_play).setContentTitle(program?.title ?: "Lectura en voz alta")
+        return builder.setSmallIcon(android.R.drawable.ic_media_play).setContentTitle(GENERIC_TITLE)
             .setContentText(if (status == "playing") "Leyendo" else "En pausa").setContentIntent(content).setOnlyAlertOnce(true)
-            .setOngoing(status == "playing").setVisibility(Notification.VISIBILITY_PUBLIC)
+            .setOngoing(status == "playing").setVisibility(Notification.VISIBILITY_PRIVATE)
             .addAction(Notification.Action.Builder(android.R.drawable.ic_media_previous, "Anterior", action("previous")).build())
             .addAction(Notification.Action.Builder(if (status == "playing") android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play,
                 if (status == "playing") "Pausar" else "Continuar", action(if (status == "playing") "pause" else "play")).build())
@@ -344,6 +345,10 @@ class ReaderSpeechService : Service() {
         const val STORE = "reader-speech-position"
         private const val CHANNEL = "reading"
         private const val NOTIFICATION = 1180
+        // Título genérico para las superficies visibles al sistema (MediaSession
+        // y notificación). El título del programa queda solo en el estado
+        // interno (snapshot y restauración de posición).
+        const val GENERIC_TITLE = "Lectura en voz alta"
         @Volatile var active: ReaderSpeechService? = null
             private set
     }

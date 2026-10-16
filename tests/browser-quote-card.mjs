@@ -6,6 +6,7 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { preview } from "vite";
 import { readFileSync } from "node:fs";
 import { zipSync, strToU8 } from "fflate";
+import { CARD_PRESETS } from "../src/core/quote-card.mjs";
 import { createLibrary, addBook } from "../src/core/library.mjs";
 
 const { chromium } = await import(
@@ -187,16 +188,50 @@ try {
   await page.waitForFunction(() =>
     window.calls.some((call) => call.command === "speech_timer_status"),
   );
+  // The same editor is available without opening or changing a book.
+  await page.locator('[data-action="create-free-quote"]').click();
+  const standalone = page.locator(".quote-card-dialog");
+  assert.equal(await standalone.locator('[name="quote"]').inputValue(), "");
+  assert.equal(await standalone.locator('[name="title"]').inputValue(), "");
+  assert.equal(
+    await standalone.locator('[name="attribution"]').isChecked(),
+    false,
+  );
+  assert.equal(
+    await standalone.locator("[data-quote-save]").isDisabled(),
+    true,
+  );
+  await standalone
+    .locator('[name="quote"]')
+    .fill("Mis palabras.\n\nMi propio poema.");
+  await standalone.locator("[data-quote-save]").click();
+  await page.waitForFunction(() => !!window.exported);
+  assert.equal(
+    await page.evaluate(
+      () =>
+        window.calls.findLast((call) => call.command === "save_quote_image")
+          .args.filename,
+    ),
+    "Cita - Lectura.png",
+  );
+  await page.keyboard.press("Escape");
   await page.locator(".book-title").click();
   await page.locator(".reader-footer").waitFor();
 
   const contentBefore = await page.locator(".prose").textContent();
   const open = async () => {
+    const tools = page.locator("[data-mobile-tools]");
+    if (
+      (await tools.isVisible()) &&
+      (await tools.getAttribute("aria-expanded")) === "false"
+    )
+      await tools.click();
     await page.evaluate(() => window.selectQuote("casa azul"));
     await page.locator('[data-action="create-quote"]').click();
     await page.locator(".quote-card-dialog").waitFor();
   };
   const dialog = page.locator(".quote-card-dialog");
+  const tab = (id) => dialog.locator(`[data-quote-tab="${id}"]`).click();
   const save = dialog.locator("[data-quote-save]"),
     copy = dialog.locator("[data-quote-copy]");
   await page.evaluate(() => getSelection().removeAllRanges());
@@ -215,20 +250,34 @@ try {
     await dialog.locator('[name="author"]').inputValue(),
     "Autor de prueba",
   );
-  assert.equal(await dialog.locator('[name="background"] option').count(), 9);
+  assert.equal(await dialog.locator('select[name="background"]').count(), 0);
+  assert.equal(await dialog.locator("[data-quote-preset]").count(), 23);
   assert.deepEqual(
     await dialog.locator("canvas").evaluate((c) => [c.width, c.height]),
     [1080, 1920],
   );
+  await tab("estilo");
   await dialog.locator('[name="format"]').selectOption("square");
   assert.deepEqual(
     await dialog.locator("canvas").evaluate((c) => [c.width, c.height]),
     [1080, 1080],
   );
+  await tab("texto");
   await dialog
     .locator('[name="quote"]')
     .fill("Una lectura puede guardar un instante.\n\nY dejarnos volver a él.");
-  await dialog.locator('[name="background"]').selectOption("forest");
+  await tab("fondo");
+  await dialog.locator('[data-quote-chip="Colores"]').click();
+  // Colores includes eight color styles and three photographic presets.
+  assert.equal(await dialog.locator("[data-quote-preset]:visible").count(), 11);
+  await dialog.locator('[data-quote-preset="forest"]').press("Enter");
+  assert.equal(
+    await dialog
+      .locator('[data-quote-preset="forest"]')
+      .getAttribute("aria-pressed"),
+    "true",
+  );
+  await tab("estilo");
   await dialog.locator('[name="font"]').selectOption("clean");
   await dialog.locator('[name="align"]').selectOption("left");
   await copy.click();
@@ -254,6 +303,7 @@ try {
     window.failSave = false;
     window.saveResult = null;
   });
+  await tab("texto");
   await dialog
     .locator('[name="quote"]')
     .fill("Una lectura puede guardar un instante.");
@@ -268,6 +318,19 @@ try {
   });
   await save.click();
   assert.equal(await copy.isDisabled(), true);
+  const countBefore = await page.evaluate(
+    () =>
+      window.calls.filter((call) => call.command === "save_quote_image").length,
+  );
+  await save.evaluate((button) => button.click());
+  assert.equal(
+    await page.evaluate(
+      () =>
+        window.calls.filter((call) => call.command === "save_quote_image")
+          .length,
+    ),
+    countBefore,
+  );
   await page.keyboard.press("Escape");
   assert.equal(await dialog.count(), 1);
   await page.evaluate(() => {
@@ -278,13 +341,16 @@ try {
     () => !document.querySelector("[data-quote-save]").disabled,
   );
   // A canceled image picker retains the preset. Only local image data is accepted.
+  await tab("fondo");
   await dialog.locator("[data-quote-background]").click();
   await page.waitForFunction(
     () => !document.querySelector("[data-quote-save]").disabled,
   );
   assert.equal(
-    await dialog.locator('[name="background"]').inputValue(),
-    "forest",
+    await dialog
+      .locator('[data-quote-preset="forest"]')
+      .getAttribute("aria-pressed"),
+    "true",
   );
   await page.evaluate(() => {
     const c = document.createElement("canvas");
@@ -295,9 +361,16 @@ try {
     ctx.fillRect(0, 0, 600, 400);
     window.photoResult = c.toDataURL("image/png");
   });
+  await tab("fondo");
   await dialog.locator("[data-quote-background]").click();
   await page.waitForFunction(
-    () => document.querySelector('[name="background"]').value === "custom",
+    () =>
+      !document.querySelector(".quote-photo-controls").hidden &&
+      !document.querySelector("[data-quote-save]").disabled,
+  );
+  assert.equal(
+    await dialog.locator('[data-quote-preset][aria-pressed="true"]').count(),
+    0,
   );
   assert.equal(await dialog.locator(".quote-photo-controls").isVisible(), true);
   const pixel = () =>
@@ -310,15 +383,16 @@ try {
   assert.ok(light[0] > dark[0] && light[1] > dark[1]);
   const quote = await dialog.locator('[name="quote"]').inputValue();
   await dialog.locator("[data-quote-surprise]").click();
-  assert.notEqual(
-    await dialog.locator('[name="background"]').inputValue(),
-    "custom",
+  assert.equal(
+    await dialog.locator('[data-quote-preset][aria-pressed="true"]').count(),
+    1,
   );
   assert.equal(await dialog.locator('[name="quote"]').inputValue(), quote);
   assert.equal(
     await dialog.locator('[name="title"]').inputValue(),
     "Un libro para recordar",
   );
+  await tab("texto");
   await dialog.locator('[name="quote"]').fill("Lectura ".repeat(4000));
   assert.equal(await save.isDisabled(), true);
   assert.equal(await copy.isDisabled(), true);
@@ -342,6 +416,75 @@ try {
       "data:image/png",
     ),
   );
+  // Each bundled background decodes under the release CSP, and export uses it.
+  await open();
+  for (const preset of CARD_PRESETS) {
+    const response = await page.request.get(
+      new URL(preset.url, server.resolvedUrls.local[0]).href,
+    );
+    assert.equal(response.status(), 200, preset.id);
+    await dialog.locator(`[data-quote-preset="${preset.id}"]`).click();
+    await page.waitForFunction(
+      () => !document.querySelector("[data-quote-save]").disabled,
+    );
+    assert.equal(await dialog.locator(".quote-status").textContent(), "");
+    await save.click();
+    await page.waitForFunction(
+      () => !document.querySelector("[data-quote-save]").disabled,
+    );
+  }
+  await page.route("**/quote-backgrounds/aurora.webp", (route) =>
+    route.abort(),
+  );
+  await dialog.locator('[data-quote-preset="aurora"]').click();
+  await page.waitForFunction(() =>
+    document
+      .querySelector(".quote-status")
+      .textContent.includes("No se pudo cargar"),
+  );
+  assert.equal(await save.isDisabled(), true);
+  await page.unroute("**/quote-backgrounds/aurora.webp");
+  let release, finish;
+  const waiting = new Promise((resolve) => (release = resolve));
+  const completed = new Promise((resolve) => (finish = resolve));
+  await page.route("**/quote-backgrounds/aurora.webp", async (route) => {
+    await waiting;
+    await route.continue();
+    finish();
+  });
+  await dialog.locator('[data-quote-preset="aurora"]').click();
+  assert.equal(await save.isDisabled(), true);
+  await dialog.locator('[data-quote-preset="forest"]').click();
+  assert.equal(await save.isEnabled(), true);
+  release();
+  await completed;
+  await page.unroute("**/quote-backgrounds/aurora.webp", undefined, {
+    behavior: "wait",
+  });
+  assert.equal(
+    await dialog
+      .locator('[data-quote-preset="forest"]')
+      .getAttribute("aria-pressed"),
+    "true",
+  );
+  await page.keyboard.press("Escape");
+  // The editor keeps export controls on screen at phone, small-phone and landscape sizes.
+  for (const [width, height] of [
+    [320, 640],
+    [390, 844],
+    [844, 390],
+    [1280, 850],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await open();
+    const bounds = await save.boundingBox();
+    assert.ok(bounds.y >= 0 && bounds.y + bounds.height <= height + 1);
+    assert.equal(
+      await page.evaluate(() => document.body.scrollWidth > innerWidth),
+      false,
+    );
+    await page.keyboard.press("Escape");
+  }
   // Translate controls while retaining the selected passage and book metadata.
   await page.locator('.reader-header [data-action="settings"]').click();
   await page.locator('[data-preference="uiLanguage"]').selectOption("en");
@@ -362,7 +505,10 @@ try {
   assert.deepEqual(errors, []);
   console.log(
     JSON.stringify({
-      casesPassed: 10,
+      casesPassed: 16,
+      standalone: true,
+      offlineBackgrounds: CARD_PRESETS.length,
+      phoneAndDesktopLayouts: true,
       selectionAcrossMarkup: true,
       fullResolution: true,
       clipboardPayload: true,

@@ -176,13 +176,16 @@ export function splitContent(template, prefix = "section") {
 export async function contentBook(
   metadata,
   sections,
-  { lazy = false, dispose, resolveImage } = {},
+  { lazy = false, dispose, resolveImage, createImageContext } = {},
 ) {
   if (!sections.length)
     throw new Error("El documento no contiene texto ni imágenes legibles.");
   let sources = sections;
   const chapters = sections.map(({ id, title }) => ({ id, title }));
-  const load = async (index, { textOnly = false } = {}) => {
+  const load = async (
+    index,
+    { textOnly = false, imageContext = createImageContext?.() } = {},
+  ) => {
     if (!sources) throw new Error("El libro ya está cerrado.");
     let html = sources[index].source;
     if (resolveImage) {
@@ -190,7 +193,9 @@ export async function contentBook(
       for (const image of template.content.querySelectorAll("img")) {
         const reference = image.getAttribute("src");
         if (!reference?.startsWith("#asset-")) continue;
-        const uri = textOnly ? null : await resolveImage(reference);
+        const uri = textOnly
+          ? null
+          : await resolveImage(reference, imageContext);
         if (localImage(uri)) image.src = uri;
         else image.remove();
       }
@@ -199,8 +204,9 @@ export async function contentBook(
     return htmlChapter(html);
   };
   if (!lazy) {
+    const imageContext = createImageContext?.();
     for (let index = 0; index < chapters.length; index++)
-      Object.assign(chapters[index], await load(index));
+      Object.assign(chapters[index], await load(index, { imageContext }));
     await dispose?.();
     sources = null;
     return { ...metadata, chapters };

@@ -7,7 +7,7 @@ use sha2::{Digest, Sha256};
 use std::{
     collections::{HashMap, HashSet},
     fs,
-    io::{Read, Seek, SeekFrom, Write},
+    io::{self, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     sync::Mutex,
     time::{SystemTime, UNIX_EPOCH},
@@ -18,6 +18,10 @@ use zip::{write::SimpleFileOptions, CompressionMethod, ZipArchive, ZipWriter};
 
 #[derive(Default)]
 pub struct BackupLock(Mutex<()>);
+
+// Límite de metadatos por manifiesto de copia: 256 MiB. No hay tope de
+// libros originales, archivos de la copia ni conteo de libros.
+const MANIFEST_MAX: u64 = 256 * 1024 * 1024;
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct FileRecord {
@@ -527,6 +531,87 @@ impl<'de> Deserialize<'de> for StrictValue {
         deserializer.deserialize_any(Visitor)
     }
 }
+
+/// Lee el manifiesto con un límite acotado: `take(max + 1)` para la lectura
+/// real y un byte extra para detectar que hay más datos. Así se rechaza
+/// incluso un prefijo JSON válido seguido de espacios en blanco sobrantes,
+/// que un `take(MAX)` aplicado solo al parser aceptaría sin darse cuenta.
+fn read_bounded(reader: &mut impl Read, max: u64) -> Result<Vec<u8>, String> {
+    let mut bytes = Vec::new();
+    reader
+        .take(max + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|e| e.to_string())?;
+    if bytes.len() > max as usize {
+        return Err("El manifiesto supera el límite de 256 MiB de metadatos.".into());
+    }
+    let mut extra = [0u8; 1];
+    if reader.read(&mut extra).map_err(|e| e.to_string())? > 0 {
+        return Err("El manifiesto supera el límite de 256 MiB de metadatos.".into());
+    }
+    Ok(bytes)
+}
+
+/// Escritura que no almacena nada: solo cuenta los bytes de una serialización.
+struct Discard;
+impl Write for Discard {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+/// Envuelve una escritura contando los bytes y fallando al sobrepasar `max`.
+struct CountingWriter<W> {
+    inner: W,
+    count: u64,
+    max: u64,
+}
+
+impl<W: Write> CountingWriter<W> {
+    fn new(inner: W, max: u64) -> Self {
+        Self {
+            inner,
+            count: 0,
+            max,
+        }
+    }
+}
+
+impl<W: Write> Write for CountingWriter<W> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let n = self.inner.write(buf)?;
+        self.count += n as u64;
+        if self.count > self.max {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "El manifiesto supera el límite de 256 MiB de metadatos.",
+            ));
+        }
+        Ok(n)
+    }
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
+    }
+}
+
+/// Longitud en bytes de la serialización JSON de `value`, acotada a `max`,
+/// sin escribir nada en disco.
+fn serialized_len<T: Serialize>(value: &T, max: u64) -> Result<u64, String> {
+    let mut sink = CountingWriter {
+        inner: Discard,
+        count: 0,
+        max,
+    };
+    serde_json::to_writer(&mut sink, value).map_err(|e| e.to_string())?;
+    if sink.count > max {
+        return Err("El manifiesto supera el límite de 256 MiB de metadatos.".into());
+    }
+    Ok(sink.count)
+}
+
 fn copy_hashed(mut input: impl Read, mut output: impl Write) -> Result<(String, u64), String> {
     let mut hash = Sha256::new();
     let mut size = 0;
@@ -542,7 +627,12 @@ fn copy_hashed(mut input: impl Read, mut output: impl Write) -> Result<(String, 
     }
     Ok((format!("{:x}", hash.finalize()), size))
 }
-fn export_to(root: &Path, destination: &Path, value: Value) -> Result<Value, String> {
+fn export_to_limited(
+    root: &Path,
+    destination: &Path,
+    value: Value,
+    max: u64,
+) -> Result<Value, String> {
     let library = portable(crate::state_store::portable_covers(root, value)?)?;
     let books = validate_library(&library)?;
     let remote_ids: HashSet<&str> = library["books"]
@@ -570,7 +660,10 @@ fn export_to(root: &Path, destination: &Path, value: Value) -> Result<Value, Str
             }
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
                 if !remote_ids.contains(id.as_str()) {
-                    let title = library["books"].as_array().unwrap().iter()
+                    let title = library["books"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
                         .find(|book| book["id"] == *id)
                         .and_then(|book| book["title"].as_str())
                         .unwrap_or(id);
@@ -590,6 +683,10 @@ fn export_to(root: &Path, destination: &Path, value: Value) -> Result<Value, Str
         library,
         files,
     };
+    // Simetría de exportación: acota la serialización del manifiesto antes de
+    // tocar el destino ni crear el temporal, de modo que una copia que esta
+    // app no puede restaurar nunca se escribe.
+    let _ = serialized_len(&manifest, max)?;
     let parent = destination.parent().ok_or("Destino no válido.")?;
     let temporary = parent.join(format!(".lector-backup-{}.tmp", uuid::Uuid::new_v4()));
     let result = (|| {
@@ -606,7 +703,10 @@ fn export_to(root: &Path, destination: &Path, value: Value) -> Result<Value, Str
                 .large_file(true),
         )
         .map_err(|e| e.to_string())?;
-        serde_json::to_writer(&mut zip, &manifest).map_err(|e| e.to_string())?;
+        // Segundo acotado mientras se escribe: si algo sobrepasa, se aborta,
+        // se elimina el temporal y se conserva el destino previo.
+        let mut counted = CountingWriter::new(&mut zip, max);
+        serde_json::to_writer(&mut counted, &manifest).map_err(|e| e.to_string())?;
         for record in &manifest.files {
             zip.start_file(
                 &record.path,
@@ -655,6 +755,10 @@ fn export_to(root: &Path, destination: &Path, value: Value) -> Result<Value, Str
     })();
     let _ = fs::remove_file(temporary);
     result
+}
+
+fn export_to(root: &Path, destination: &Path, value: Value) -> Result<Value, String> {
+    export_to_limited(root, destination, value, MANIFEST_MAX)
 }
 
 struct Stage {
@@ -714,7 +818,7 @@ fn check_central_names(file: &mut fs::File, start: u64, expected: usize) -> Resu
     }
     Ok(())
 }
-fn import_from(root: &Path, source: &Path) -> Result<Value, String> {
+fn import_from_limited(root: &Path, source: &Path, max: u64) -> Result<Value, String> {
     let mut archive = ZipArchive::new(fs::File::open(source).map_err(|e| e.to_string())?)
         .map_err(|e| e.to_string())?;
     if archive.offset() != 0 {
@@ -739,12 +843,20 @@ fn import_from(root: &Path, source: &Path) -> Result<Value, String> {
             return Err("La copia contiene una ruta o enlace no válido.".into());
         }
     }
-    let strict: StrictValue = serde_json::from_reader(
-        archive
+    let manifest_bytes = {
+        let mut manifest_file = archive
             .by_name("manifest.json")
-            .map_err(|_| "Falta manifest.json en la copia.")?,
-    )
-    .map_err(|_| "El manifiesto JSON no es válido o contiene claves repetidas.")?;
+            .map_err(|_| "Falta manifest.json en la copia.")?;
+        // Tamaño declarado (descomprimido) del manifiesto, antes de leerlo.
+        if manifest_file.size() > max {
+            return Err("El manifiesto supera el límite de 256 MiB de metadatos.".into());
+        }
+        // Lectura real acotada: rechaza también los espacios en blanco sobrantes
+        // tras un prefijo JSON válido.
+        read_bounded(&mut manifest_file, max)?
+    };
+    let strict: StrictValue = serde_json::from_reader(manifest_bytes.as_slice())
+        .map_err(|_| "El manifiesto JSON no es válido o contiene claves repetidas.")?;
     let manifest: Manifest = serde_json::from_value(strict.0)
         .map_err(|_| "El manifiesto de la copia no es compatible.")?;
     if manifest.version != 1 || manifest.kind != KIND {
@@ -832,6 +944,10 @@ fn import_from(root: &Path, source: &Path) -> Result<Value, String> {
     Ok(
         json!({"library":manifest.library,"filesImported":installed.len(),"filesReused":reused,"remoteBooks":books.len()-manifest.files.len()}),
     )
+}
+
+fn import_from(root: &Path, source: &Path) -> Result<Value, String> {
+    import_from_limited(root, source, MANIFEST_MAX)
 }
 
 #[tauri::command]
@@ -1447,5 +1563,158 @@ mod tests {
             assert!(!target.0.join("books").exists());
             no_stage(&target.0);
         }
+    }
+
+    const LIMITE_PRUEBA: u64 = 512;
+
+    fn zip_raw(path: &Path, entries: Vec<(&str, Vec<u8>)>) {
+        let mut writer = ZipWriter::new(fs::File::create(path).unwrap());
+        for (nombre, bytes) in entries {
+            writer
+                .start_file(nombre, SimpleFileOptions::default())
+                .unwrap();
+            writer.write_all(&bytes).unwrap();
+        }
+        writer.finish().unwrap();
+    }
+
+    // Manifiesto JSON válido rellenado con espacios hasta `total` bytes: los
+    // espacios tras el prefijo válido cuentan como tamaño real.
+    fn manifiesto_relleno(total: usize) -> Vec<u8> {
+        let base = br#"{"version":1,"kind":"lector-libre-backup","createdAt":1,"library":{"version":1,"preferences":{"view":"covers","theme":"midnight"},"books":[],"registers":{}},"files":[]}"#;
+        assert!(base.len() <= total);
+        let mut bytes = base.to_vec();
+        bytes.extend(b" ".repeat(total - base.len()));
+        bytes
+    }
+
+    #[test]
+    fn import_rejects_manifest_declared_over_limit_preserves_library() {
+        let source = Root::new();
+        let target = Root::new();
+        fs::write(target.0.join("state.json"), b"biblioteca existente").unwrap();
+        let bytes = b"un libro de prueba";
+        let id = hash(bytes);
+        let path = format!("books/{id}.txt");
+        let mut m = manifest(vec![book(&id, "txt")], vec![(&id, "txt", bytes)]);
+        m.library["books"][0]["title"] = json!("x".repeat(900));
+        let archive = source.0.join("declarado.zip");
+        zip_file(&archive, &m, vec![(&path, bytes)]);
+        assert!(import_from_limited(&target.0, &archive, LIMITE_PRUEBA)
+            .unwrap_err()
+            .contains("límite"));
+        assert!(!target.0.join("books").exists());
+        no_stage(&target.0);
+        assert_eq!(
+            fs::read(target.0.join("state.json")).unwrap(),
+            b"biblioteca existente"
+        );
+    }
+
+    #[test]
+    fn import_rejects_actual_oversized_manifest_before_stage() {
+        let source = Root::new();
+        let target = Root::new();
+        let archive = source.0.join("real.zip");
+        zip_raw(
+            &archive,
+            vec![(
+                "manifest.json".into(),
+                manifiesto_relleno(LIMITE_PRUEBA as usize + 100),
+            )],
+        );
+        assert!(import_from_limited(&target.0, &archive, LIMITE_PRUEBA)
+            .unwrap_err()
+            .contains("límite"));
+        assert_eq!(fs::read_dir(&target.0).unwrap().count(), 0);
+        no_stage(&target.0);
+    }
+
+    #[test]
+    fn import_rejects_oversized_trailing_whitespace_after_valid_json_prefix() {
+        let source = Root::new();
+        let target = Root::new();
+        let mut prefix = br#"{}"#.to_vec();
+        prefix.extend(b" ".repeat(LIMITE_PRUEBA as usize + 10));
+        let archive = source.0.join("espacios.zip");
+        zip_raw(&archive, vec![("manifest.json".into(), prefix)]);
+        assert!(import_from_limited(&target.0, &archive, LIMITE_PRUEBA)
+            .unwrap_err()
+            .contains("límite"));
+        assert_eq!(fs::read_dir(&target.0).unwrap().count(), 0);
+        no_stage(&target.0);
+    }
+
+    #[test]
+    fn import_accepts_manifest_exactly_at_limit_boundary() {
+        let source = Root::new();
+        let target = Root::new();
+        let archive = source.0.join("limite.zip");
+        zip_raw(
+            &archive,
+            vec![(
+                "manifest.json".into(),
+                manifiesto_relleno(LIMITE_PRUEBA as usize),
+            )],
+        );
+        // Cabe exactamente en el límite: el rechazo, si lo hay, es de contenido, no de tamaño.
+        match import_from_limited(&target.0, &archive, LIMITE_PRUEBA) {
+            Ok(_) => {}
+            Err(e) => assert!(!e.contains("límite"), "error inesperado: {e}"),
+        }
+        no_stage(&target.0);
+    }
+
+    #[test]
+    fn import_rejects_duplicate_json_keys_in_manifest() {
+        let source = Root::new();
+        let target = Root::new();
+        let archive = source.0.join("duplicado.zip");
+        zip_raw(
+            &archive,
+            vec![(
+                "manifest.json".into(),
+                br#"{"version":1,"version":2,"kind":"lector-libre-backup","createdAt":1,"library":{},"files":[]}"#.to_vec(),
+            )],
+        );
+        assert!(import_from_limited(&target.0, &archive, LIMITE_PRUEBA)
+            .unwrap_err()
+            .contains("repetida"));
+        no_stage(&target.0);
+    }
+
+    #[test]
+    fn export_rejects_oversized_manifest_and_keeps_previous_destination() {
+        let root = Root::new();
+        let bytes = b"libro de prueba de exportacion";
+        let (id, _) =
+            book_files::receive(&root.0.join("books"), "txt", &bytes[..], None, || false).unwrap();
+        let mut value = library(vec![book(&id, "txt")]);
+        value["books"][0]["title"] = json!("x".repeat(900));
+        let previous = root.0.join("previous.zip");
+        fs::write(&previous, b"previous backup").unwrap();
+        assert!(export_to_limited(&root.0, &previous, value, LIMITE_PRUEBA).is_err());
+        assert_eq!(fs::read(&previous).unwrap(), b"previous backup");
+        assert!(!fs::read_dir(&root.0)
+            .unwrap()
+            .any(|e| { e.unwrap().file_name().to_str().unwrap().ends_with(".tmp") }));
+    }
+
+    #[test]
+    fn export_import_symmetry_respects_injected_limit() {
+        let source = Root::new();
+        let destination = Root::new();
+        let bytes = b"Texto de copia con tildes.";
+        let (id, _) =
+            book_files::receive(&source.0.join("books"), "txt", &bytes[..], None, || false)
+                .unwrap();
+        let value = library(vec![book(&id, "txt")]);
+        let archive = source.0.join("copia.zip");
+        export_to_limited(&source.0, &archive, value.clone(), 4096).unwrap();
+        let restored = import_from_limited(&destination.0, &archive, 4096).unwrap();
+        assert_eq!(restored["library"], value);
+        assert_eq!(restored["filesImported"], 1);
+        assert_eq!(restored["remoteBooks"], 0);
+        no_stage(&destination.0);
     }
 }

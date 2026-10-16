@@ -1,4 +1,14 @@
-# Comprobaciones de 0.12.4
+# Preparación local de 0.12.6
+
+El 16 de octubre de 2026 el usuario confirmó que completó las pruebas de la entrega anterior en PC y celular. Es una confirmación del usuario, sin desglose adicional de los casos ejecutados ni instrumentación independiente del teléfono.
+
+La preparación 0.12.6 elimina el selector de Fondo duplicado y conserva la galería, la imagen propia y los dos accesos al creador de citas. Las 125 pruebas JavaScript y las 61 Rust aprobaron. Los 16 casos integrados del editor aprobaron tras corregir la expectativa del filtro Colores, que incluye ocho estilos y tres fondos fotográficos.
+
+La ejecución inicial completa de navegador aprobó 22 de 24 suites. Una falló por esa expectativa de la nueva prueba y se resolvió. La otra, browser-stability.mjs, volvió a fallar en una ejecución aislada: la misma superficie de lectura cambia scrollTop de 300 a 293 al sincronizar. Se conserva la aserción exacta. Se registra como defecto pendiente; esta preparación no se presenta como una entrega sin fallos ni se publica automáticamente.
+
+La auditoría extensa y sus límites se documentan por separado, vinculados a una copia de código inmutable. Los recuentos anteriores corresponden a ejecuciones de esta preparación; no se ha repetido todavía su instalación en un teléfono. Drive y OmniRoute siguen desactivados.
+
+# Comprobaciones históricas de 0.12.4
 
 Comprobaciones del 15 de octubre de 2026. Google Drive continúa desactivado por defecto. Se conservan las correcciones de respaldo, lectura vertical y controles de voz de 0.12.3.
 

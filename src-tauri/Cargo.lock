@@ -2128,7 +2128,7 @@ dependencies = [
 
 [[package]]
 name = "lector-libre"
-version = "0.12.4"
+version = "0.12.6"
 dependencies = [
  "arboard",
  "base64 0.22.1",

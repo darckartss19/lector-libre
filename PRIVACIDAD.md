@@ -1,4 +1,4 @@
-# Privacidad de la vista previa 0.12.4
+# Privacidad de la vista previa 0.12.5
 
 La biblioteca, documentos importados, organización, notas, progreso y preferencias se guardan en este dispositivo. El lector conserva los archivos originales. Las copias ZIP se exportan al lugar que elijas.
 
@@ -9,3 +9,7 @@ Los diagnósticos del lector son locales y registran eventos y medidas de rendim
 La lectura con voces offline se realiza en el dispositivo mediante el motor instalado. Descargar motores o datos de voz requiere internet y depende de sus proveedores y licencias. No se crean archivos permanentes de audiolibro.
 
 Autorizar una carpeta en Android permite leer esa carpeta y sus subcarpetas. Compartir una tarjeta abre el selector de Android: tú eliges la aplicación y completas el envío. Los reportes y reseñas que publiques en GitHub serán públicos.
+
+Las citas, poemas y fondos personales del creador de imágenes se procesan en este dispositivo. Los 15 fondos fotográficos nuevos vienen incluidos en la aplicación; no se envía tu texto a servicios de inteligencia artificial. Guardar o copiar una imagen no la publica. Al compartir, tú eliges el destino y completas el envío.
+
+Los controles multimedia y las notificaciones de lectura en Android usan el título genérico «Lectura en voz alta». El título del libro se conserva dentro de la aplicación para identificar la lectura y restaurar su posición.

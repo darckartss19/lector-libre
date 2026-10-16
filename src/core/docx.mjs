@@ -1,3 +1,4 @@
+import { zipSync } from "fflate";
 import { archiveReader, imageType } from "./document-archive.mjs";
 import {
   contentBook,
@@ -6,6 +7,7 @@ import {
   splitContent,
   xmlValue,
 } from "./document-content.mjs";
+import { readArchive } from "./archive-resource.mjs";
 
 export async function parseDocx(bytes, filename, options = {}) {
   const archive = archiveReader(bytes);
@@ -35,13 +37,22 @@ export async function parseDocx(bytes, filename, options = {}) {
     archive.dispose();
     return { ...metadata, chapters: [] };
   }
+  // Mammoth receives only bounded, normalized entries: ZIP name aliases and
+  // parser differences cannot reintroduce an unverified compressed member.
+  let verified;
+  try {
+    verified = zipSync(readArchive(bytes), { level: 0 });
+  } catch (error) {
+    archive.dispose();
+    throw error;
+  }
   // Mammoth preserves document structure, lists, tables and notes; image bytes are read on demand.
   const module = await import("mammoth/mammoth.browser.js");
   const mammoth = module.default ?? module;
   const images = new Map();
-  const buffer = bytes.buffer.slice(
-    bytes.byteOffset,
-    bytes.byteOffset + bytes.byteLength,
+  const buffer = verified.buffer.slice(
+    verified.byteOffset,
+    verified.byteOffset + verified.byteLength,
   );
   let result;
   try {
