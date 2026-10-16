@@ -1,8 +1,8 @@
 # Lector libre
 
-Lector gratuito y de código abierto para **Windows y Android**, con biblioteca personal, lectura sin conexión, voz y personalización. La versión **0.12.4** reúne las paletas revisadas para lectura, los ajustes de movimiento y las correcciones de respaldo, voz y posición de lectura.
+Lector gratuito y de código abierto para **Windows, Android, macOS y Linux**, con biblioteca personal, lectura sin conexión y personalización. La lectura en voz alta está disponible en Windows y Android. La versión **0.12.6** es una vista previa pública; iPhone y iPad están en preparación para pruebas desde Xcode.
 
-**La sincronización con Google Drive está desactivada en esta entrega, tanto en Windows como en Android. Está prevista para una versión futura.** Tus libros, progreso y ajustes se guardan en el dispositivo. Puedes trasladarlos mediante una copia ZIP.
+**La sincronización con Google Drive está desactivada en todas las plataformas. Está prevista para una versión futura.** Tus libros, progreso y ajustes se guardan en el dispositivo. Puedes trasladarlos mediante una copia ZIP.
 
 ## Vista previa 0.12.6
 
@@ -13,6 +13,24 @@ Incluye el creador de imágenes con texto libre, quince fondos fotográficos, la
 [Windows x64](https://github.com/darckartss19/lector-libre/releases/download/v0.12.6-preview.1/Lector-libre-0.12.6-Windows.exe) · [Android arm64](https://github.com/darckartss19/lector-libre/releases/download/v0.12.6-preview.1/Lector-libre-0.12.6-Android-arm64.apk) · [MEmu](https://github.com/darckartss19/lector-libre/releases/download/v0.12.6-preview.1/Lector-libre-0.12.6-MEmu.apk)
 
 Es una versión preliminar: persiste un pequeño desplazamiento al sincronizar y hay comprobaciones de seguridad pendientes. Consulta [el estado de validación](docs/VALIDACION-0.12.6.md). La sincronización con Drive continúa desactivada.
+
+## Pruebas de Mac y Linux 0.12.6
+
+| Plataforma | Descarga | Requisitos y estado |
+| --- | --- | --- |
+| Mac con Apple Silicon | [Instalador DMG](https://github.com/darckartss19/lector-libre/releases/download/v0.12.6-macos-preview.1/Lector-libre-0.12.6-macOS-Apple-Silicon.dmg) | M1 o posterior, macOS 12 o posterior |
+| Mac con Intel | [Instalador DMG](https://github.com/darckartss19/lector-libre/releases/download/v0.12.6-macos-preview.1/Lector-libre-0.12.6-macOS-Intel.dmg) | Intel x64, macOS 12 o posterior |
+| Linux x86_64 | [Paquete y suma SHA256](https://github.com/darckartss19/lector-libre/releases/tag/v0.12.6-linux-preview.1) | Construido y probado en Ubuntu 24.04; glibc 2.39 o posterior |
+
+Ambas plataformas incluyen biblioteca, lectura y creador de citas. Pasaron las
+pruebas de empaquetado y arranque en los equipos de compilación; queda probarlas
+con bibliotecas reales en dispositivos físicos. La voz nativa de Mac y Linux
+todavía no está disponible. Los DMG tienen firma ad hoc y no están notarizados
+por Apple. Consulta las guías de [Mac](docs/MACOS.md) y [Linux](docs/LINUX.md).
+
+Para **iPhone y iPad**, consulta la [preparación con Xcode y cuenta gratuita](docs/IOS.md).
+La instalación en el dispositivo necesita firmar desde tu Mac; el binario de
+simulador no es un instalador para el teléfono.
 
 ## Cambios de 0.12.4
 
